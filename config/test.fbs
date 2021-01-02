@@ -1,0 +1,27 @@
+
+table FbEigenMat {
+      dtype:string;
+      rows:uint32=1;
+      cols:uint32=1;
+      data:[float];
+      order:string;
+}
+
+/*struct Vec3 {
+      v:[float32:3];
+  }
+
+  struct Joy {
+      k_j_omega: float32;
+      k_j_x_dot: float32;
+      v3:Vec3;
+      m:EigenMat;
+  }
+*/
+
+table FbConf {
+    //joy:Joy;
+    mat:FbEigenMat;
+}
+
+root_type FbConf;
