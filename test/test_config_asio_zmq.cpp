@@ -29,7 +29,7 @@ class RemoteConfigSever : private asio::io_service {
 
     m_storage = std::make_shared<nlohmann::json>();
 
-    LoadConfig(config_path);
+    LoadFromFile(config_path);
 
     ScheduleReceive();
 
@@ -51,7 +51,7 @@ class RemoteConfigSever : private asio::io_service {
   azmq::rep_socket m_responder;
   std::vector<std::uint8_t> m_buf;
 
-  void LoadConfig(const std::string &config_path = "") {
+  nlohmann::json LoadFromFile(const std::string &config_path = "") {
 
     if (!config_path.empty()) {
       this->m_config_path = config_path;
@@ -78,10 +78,10 @@ class RemoteConfigSever : private asio::io_service {
 
     std::ifstream i(this->m_tmp_json_file_path);
 
-    this->Set(nlohmann::json::parse(i));
-
 //    std::ofstream o(this->m_tmp_json_file_path);
 //    o << (*m_storage).dump(1, '\t');
+
+    return this->Set(nlohmann::json::parse(i));
 
   }
 
@@ -103,10 +103,12 @@ class RemoteConfigSever : private asio::io_service {
 
     nlohmann::json repl;
 
-    if (req["type"].get<std::string>() == "get") {
+    if (req["cmd"].get<std::string>() == "get") {
       repl = this->Get(req["key"].get<std::string>());
-    } else if (req["type"].get<std::string>() == "set") {
+    } else if (req["cmd"].get<std::string>() == "set") {
       repl = this->Set(req["key"].get<std::string>(), req["value"]);
+    } else if (req["cmd"].get<std::string>() == "load") {
+      repl = this->LoadFromFile(req["value"].get<std::string>());
     }
 
     this->m_responder.async_send(

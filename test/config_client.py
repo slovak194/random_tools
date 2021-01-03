@@ -22,7 +22,7 @@ class ConfigClient:
 
         def set(self, key, value):
             key = self.relax(key)
-            self.socket.send(msp.packb({"type": "set", "key": key, "value": value}))
+            self.socket.send(msp.packb({"cmd": "set", "key": key, "value": value}))
             rec = self.socket.recv()
             message = msp.unpackb(rec)
             if message:
@@ -32,7 +32,13 @@ class ConfigClient:
 
         def get(self, key):
             key = self.relax(key)
-            self.socket.send(msp.packb({"type": "get", "key": key}))
+            self.socket.send(msp.packb({"cmd": "get", "key": key}))
+            rec = self.socket.recv()
+            message = msp.unpackb(rec)
+            return message
+
+        def load(self, value=""):
+            self.socket.send(msp.packb({"cmd": "load", "value": value}))
             rec = self.socket.recv()
             message = msp.unpackb(rec)
             return message

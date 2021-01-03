@@ -31,9 +31,9 @@ async def recv_and_process():
             request = msp.unpackb(msg[0])
             pprint(request)
 
-            if request["type"] == "get":
+            if request["cmd"] == "get":
                 responce = resolve_pointer(jobj, request["key"])
-            elif request["type"] == "set":
+            elif request["cmd"] == "set":
                 set_pointer(jobj, request["key"], request["value"])
                 responce = True
         except:
