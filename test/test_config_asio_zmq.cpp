@@ -68,23 +68,12 @@ class ZmqHandler {
 
   void OnReceive(const boost::system::error_code &error, size_t bytes_transferred) {
 
-//    std::cout << "some received bytes " << bytes_transferred << std::endl;
-
-//    {"key":"/model","type":"get"}
-
     m_buf.resize(bytes_transferred);
 
     nlohmann::json req = nlohmann::json::from_msgpack(m_buf);
     std::cout << req.dump() << std::endl;
 
-
-    //    nlohmann::json repl/* = "{'g': 10, 'm_c': 0.39, 'm_p': 0.614, 'h_p': 0.154, 'wheel_radius': 0.035, 'wheel_base': 0.183}"_json*/;
-//    repl["g"] = 10.0;
-//    repl["m_c"] = 0.39;
-
     nlohmann::json repl;
-
-//    auto p = ""_json_pointer;
 
     if (req["type"].get<std::string>() == "get") {
       repl = (*m_storage)[nlohmann::json::json_pointer(req["key"].get<std::string>())];
