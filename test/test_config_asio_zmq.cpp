@@ -3,6 +3,7 @@
 #include <azmq/socket.hpp>
 #include <boost/asio.hpp>
 #include <array>
+#include <chrono>
 #include <vector>
 #include <fstream>
 #include <memory>
@@ -15,7 +16,6 @@ class ZmqHandler {
  public:
 
   std::shared_ptr<nlohmann::json> m_storage;
-
   azmq::rep_socket m_responder;
   std::vector<std::uint8_t> m_buf;
 
@@ -68,7 +68,7 @@ class ZmqHandler {
 
   void OnReceive(const boost::system::error_code &error, size_t bytes_transferred) {
 
-    m_buf.resize(bytes_transferred);
+    this->m_buf.resize(bytes_transferred);
 
     nlohmann::json req = nlohmann::json::from_msgpack(m_buf);
     std::cout << req.dump() << std::endl;
@@ -76,10 +76,10 @@ class ZmqHandler {
     nlohmann::json repl;
 
     if (req["type"].get<std::string>() == "get") {
-      repl = (*m_storage)[nlohmann::json::json_pointer(req["key"].get<std::string>())];
+      repl = (*this->m_storage)[nlohmann::json::json_pointer(req["key"].get<std::string>())];
     } else if (req["type"].get<std::string>() == "set") {
-      (*m_storage)[nlohmann::json::json_pointer(req["key"].get<std::string>())] = req["value"];
-      repl = (*m_storage)[nlohmann::json::json_pointer(req["key"].get<std::string>())];
+      (*this->m_storage)[nlohmann::json::json_pointer(req["key"].get<std::string>())] = req["value"];
+      repl = (*this->m_storage)[nlohmann::json::json_pointer(req["key"].get<std::string>())];
     }
 
     const auto msgpack = nlohmann::json::to_msgpack(repl);
