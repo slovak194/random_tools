@@ -4,6 +4,7 @@
 #include <boost/asio.hpp>
 #include <array>
 #include <chrono>
+#include <thread>
 #include <vector>
 #include <fstream>
 #include <memory>
@@ -12,10 +13,9 @@
 namespace asio = boost::asio;
 
 class ZmqHandler {
-
- public:
-
   std::shared_ptr<nlohmann::json> m_storage;
+  std::mutex m_storage_mtx;
+ public:
   azmq::rep_socket m_responder;
   std::vector<std::uint8_t> m_buf;
 
@@ -26,7 +26,6 @@ class ZmqHandler {
     m_buf.reserve(256);
 
     const std::string tmp_json_file_path = config_path + ".json";
-
     std::string command = std::string("python3 -c '") +
         std::string("config_file_yaml_path = \"") + config_path + std::string("\"\n") +
         "import yaml\n"
@@ -76,19 +75,35 @@ class ZmqHandler {
     nlohmann::json repl;
 
     if (req["type"].get<std::string>() == "get") {
-      repl = (*this->m_storage)[nlohmann::json::json_pointer(req["key"].get<std::string>())];
+      repl = this->Get(req["key"].get<std::string>());
     } else if (req["type"].get<std::string>() == "set") {
-      (*this->m_storage)[nlohmann::json::json_pointer(req["key"].get<std::string>())] = req["value"];
-      repl = (*this->m_storage)[nlohmann::json::json_pointer(req["key"].get<std::string>())];
+      repl = this->Set(req["key"].get<std::string>(), req["value"]);
     }
 
-    const auto msgpack = nlohmann::json::to_msgpack(repl);
-
-    azmq::message m(asio::buffer(msgpack));
-
-    this->m_responder.async_send(m, [this](auto ...vn){});
+    this->m_responder.async_send(
+        azmq::message(asio::buffer(nlohmann::json::to_msgpack(repl))),
+        [this](auto ...vn){});
 
     ScheduleReceive();
+  }
+
+  nlohmann::json Get(const std::string &key) {
+    nlohmann::json tmp;
+    {
+      std::scoped_lock<std::mutex> lock(this->m_storage_mtx);
+      tmp = (*this->m_storage)[nlohmann::json::json_pointer(key)];
+    }
+    return tmp;
+  }
+
+  nlohmann::json Set(const std::string &key, const nlohmann::json &value) {
+    nlohmann::json tmp;
+    {
+      std::scoped_lock<std::mutex> lock(this->m_storage_mtx);
+      (*this->m_storage)[nlohmann::json::json_pointer(key)] = value;
+      tmp = (*this->m_storage)[nlohmann::json::json_pointer(key)];
+    }
+    return tmp;
   }
 
 };
