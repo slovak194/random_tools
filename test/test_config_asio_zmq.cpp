@@ -10,17 +10,19 @@
 #include <memory>
 #include <nlohmann/json.hpp>
 
+using namespace std::chrono_literals;
+
 namespace asio = boost::asio;
 
-class ZmqHandler {
+class ZmqHandler : public asio::io_service {
   std::shared_ptr<nlohmann::json> m_storage;
   std::mutex m_storage_mtx;
  public:
   azmq::rep_socket m_responder;
   std::vector<std::uint8_t> m_buf;
 
-  explicit ZmqHandler(asio::io_service &ios, const std::string &config_path)
-  : m_responder(ios) {
+  explicit ZmqHandler(const std::string &config_path)
+      : m_responder(*this) {
     m_responder.bind("tcp://127.0.0.1:5555");
 
     m_buf.reserve(256);
@@ -54,6 +56,10 @@ class ZmqHandler {
 
     ScheduleReceive();
 
+    std::thread thread([this]() { this->run(); });
+
+    thread.detach();
+
   }
 
   void ScheduleReceive() {
@@ -82,7 +88,7 @@ class ZmqHandler {
 
     this->m_responder.async_send(
         azmq::message(asio::buffer(nlohmann::json::to_msgpack(repl))),
-        [this](auto ...vn){});
+        [this](auto ...vn) {});
 
     ScheduleReceive();
   }
@@ -108,15 +114,16 @@ class ZmqHandler {
 
 };
 
+int main(int argc, char **argv) {
 
+  ZmqHandler zmq_handler("/home/slovak/remote-config/config/conf_test.yaml");
 
-int main(int argc, char** argv) {
+  for (int i = 0; i < 1000; i++) {
+    std::this_thread::sleep_for(1s);
 
-  asio::io_service ios;
+    std::cout << "use config: " << zmq_handler.Get("/test/vector/data/0").dump() << std::endl;
 
-  ZmqHandler zmq_handler(ios, "/home/slovak/remote-config/config/conf_test.yaml");
-
-  ios.run();
+  }
 
   return 0;
 }
