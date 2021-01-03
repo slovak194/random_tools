@@ -59,10 +59,10 @@ class ZmqHandler {
 
   void ScheduleReceive() {
 
-    m_buf.resize(256);
+    this->m_buf.resize(256);
 
-    m_responder.async_receive(
-        asio::buffer(m_buf),
+    this->m_responder.async_receive(
+        asio::buffer(this->m_buf),
         [this](auto ...vn) { this->OnReceive(vn...); });
   }
 
@@ -70,7 +70,7 @@ class ZmqHandler {
 
     this->m_buf.resize(bytes_transferred);
 
-    nlohmann::json req = nlohmann::json::from_msgpack(m_buf);
+    nlohmann::json req = nlohmann::json::from_msgpack(this->m_buf);
     std::cout << req.dump() << std::endl;
 
     nlohmann::json repl;
@@ -86,7 +86,7 @@ class ZmqHandler {
 
     azmq::message m(asio::buffer(msgpack));
 
-    this->m_responder.async_send(m, [](auto ...vn){});
+    this->m_responder.async_send(m, [this](auto ...vn){});
 
     ScheduleReceive();
   }
