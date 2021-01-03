@@ -62,56 +62,7 @@ class ConfigClient:
         return pformat(self.instance.get(""))
 
 
-class ConfAccessor(UserDict):
-
-    def refresh(self):
-        path = getattr(self, 'path', "")
-        self.data = ConfigClient().get(path)
-
-    def __getitem__(self, key):
-        if not isinstance(key, str):
-            key = str(key)
-
-        path = getattr(self, 'path', "")
-
-        if "/" in key and path == "":
-            return ConfigClient().get(key)
-
-        else:
-
-            self.data = ConfigClient().get(path + "/" + key)
-
-            new_dict = ConfAccessor()
-            new_dict.path = path + "/" + key
-            new_dict.data = self.data
-
-            return new_dict
-
-    def __setitem__(self, key, value):
-        if not isinstance(key, str):
-            key = str(key)
-
-        path = getattr(self, 'path', "")
-
-        if "/" in key and path == "":
-            ConfigClient().set(key, value)
-        else:
-            ConfigClient().set(path + "/" + key, value)
-
-    def __repr__(self):
-        self.refresh()
-        return pformat(self.data)
-
-    def keys(self):
-        self.refresh()
-        return self.data.keys()
-
-    @property
-    def ptr(self):
-        return ConfigClient()
-
 # %%
 if __name__ == "__main__":
     c = ConfigClient()
-    # c = ConfAccessor()
 

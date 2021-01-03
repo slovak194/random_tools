@@ -1,7 +1,7 @@
 from pprint import pprint
 
 import yaml
-from jsonpointer import resolve_pointer, set_pointer, JsonPointer, JsonPointerException
+from jsonpointer import resolve_pointer, set_pointer
 import msgpack as msp
 
 import asyncio
@@ -11,7 +11,8 @@ import zmq.asyncio
 import sys
 sys.modules['cloudpickle'] = None
 
-# url = "ipc://some"
+# TODO, OLSLO, reimplement c++ stuff here or bind?
+
 url = "tcp://127.0.0.1:5555"
 ctx = zmq.asyncio.Context()
 
