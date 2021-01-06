@@ -22,6 +22,18 @@ namespace asio = boost::asio;
 
 namespace remote_config {
 
+
+nlohmann::json get_types(const nlohmann::json &j) {
+  nlohmann::json types;
+  auto jf = j.flatten();
+  for (auto& [k, v] : jf.items()) {
+    types[k] = static_cast<std::uint64_t>(v.type());
+  }
+  return types.unflatten();
+}
+
+
+
 class Server : private asio::io_service {
 
  public:
@@ -36,6 +48,7 @@ class Server : private asio::io_service {
     m_buf.reserve(256);
 
     m_storage = std::make_shared<nlohmann::json>();
+    m_types = std::make_shared<nlohmann::json>();
 
     Load(config_path);
 
@@ -53,13 +66,16 @@ class Server : private asio::io_service {
 
  private:
 
-  std::shared_ptr<nlohmann::json> m_storage;
   std::mutex m_storage_mtx;
+  std::shared_ptr<nlohmann::json> m_storage;
+
+  std::mutex m_types_mtx;
+  std::shared_ptr<nlohmann::json> m_types;
 
   azmq::rep_socket m_responder;
   std::vector<std::uint8_t> m_buf;
 
-  nlohmann::json Load(const std::string &config_path = "") {
+  void Load(const std::string &config_path = "") {
 
     if (!config_path.empty()) {
       this->m_config_path = config_path;
@@ -89,7 +105,7 @@ class Server : private asio::io_service {
 //    std::ofstream o(this->m_tmp_json_file_path);
 //    o << (*m_storage).dump(1, '\t');
 
-    return this->Set(nlohmann::json::parse(i));
+    this->Set(nlohmann::json::parse(i));
 
   }
 
@@ -114,9 +130,11 @@ class Server : private asio::io_service {
     if (req["cmd"].get<std::string>() == "get") {
       repl = this->Get(req["key"].get<std::string>());
     } else if (req["cmd"].get<std::string>() == "set") {
-      repl = this->Set(req["key"].get<std::string>(), req["value"]);
+      this->Set(req["key"].get<std::string>(), req["value"]);
+      repl = this->Get(req["key"].get<std::string>());
     } else if (req["cmd"].get<std::string>() == "load") {
-      repl = this->Load(req["value"].get<std::string>());
+      this->Load(req["value"].get<std::string>());
+      repl = this->Get("");
     }
 
     this->m_responder.async_send(
@@ -130,33 +148,45 @@ class Server : private asio::io_service {
     nlohmann::json tmp;
     {
       std::scoped_lock<std::mutex> lock(this->m_storage_mtx);
-      tmp = (*this->m_storage)[nlohmann::json::json_pointer(key)];
+      tmp = (*this->m_storage).at(nlohmann::json::json_pointer(key));  // TODO, OLSLO, catch!
     }
     return tmp;
   }
 
-  nlohmann::json Set(const nlohmann::json &value) {
-    return Set("", value, true);
+  nlohmann::json GetTypes(const std::string &key) {
+    nlohmann::json tmp;
+    {
+      std::scoped_lock<std::mutex> lock(this->m_types_mtx);
+      tmp = (*this->m_types).at(nlohmann::json::json_pointer(key));  // TODO, OLSLO, catch!
+    }
+    return tmp;
   }
 
-  nlohmann::json Set(const std::string &key, const nlohmann::json &value, bool unsafe = false) {
-    nlohmann::json tmp;
-    auto orig_type = Get(key).type();
-    auto new_type = value.type();
+  void Set(const nlohmann::json &value) {
+    Set("", value, true);
+  }
 
-    if (unsafe || (new_type == orig_type)) {
+  void Set(const std::string &key, const nlohmann::json &value, bool unsafe = false) {
+
+    auto new_types = get_types(value);
+
+    if (unsafe) {
       {
-        std::scoped_lock<std::mutex> lock(this->m_storage_mtx);
-        (*this->m_storage)[nlohmann::json::json_pointer(key)] = value;
-        tmp = (*this->m_storage)[nlohmann::json::json_pointer(key)];
+        std::scoped_lock<std::mutex, std::mutex> lock(this->m_storage_mtx, this->m_types_mtx);
+        (*this->m_storage).at(nlohmann::json::json_pointer(key)) = value;  // TODO, OLSLO, catch!
+        (*this->m_types).at(nlohmann::json::json_pointer(key)) = new_types;  // TODO, OLSLO, catch!
       }
     } else {
-      std::cout << "Wrong type: " // TODO, OLSLO, introduce logging.
-      << static_cast<int>(orig_type) << " != "
-      << static_cast<int>(new_type) << std::endl;
-    }
 
-    return tmp;
+      if (nlohmann::json::diff(GetTypes(key), new_types).empty()) {
+        {
+          std::scoped_lock<std::mutex> lock(this->m_storage_mtx);
+          (*this->m_storage).at(nlohmann::json::json_pointer(key)) = value;  // TODO, OLSLO, catch!
+        }
+      } else {
+        std::cout << "Wrong type: " << std::endl; // TODO, OLSLO, introduce logging.
+      }
+    }
   }
 
 };
