@@ -7,7 +7,6 @@
 
 #include <iostream>
 #include <array>
-#include <chrono>
 #include <thread>
 #include <vector>
 #include <fstream>
@@ -17,7 +16,7 @@
 #include <boost/asio.hpp>
 #include <nlohmann/json.hpp>
 
-using namespace std::chrono_literals;
+#include "Json2Eigen.hpp"
 
 namespace asio = boost::asio;
 
@@ -137,16 +136,26 @@ class Server : private asio::io_service {
   }
 
   nlohmann::json Set(const nlohmann::json &value) {
-    return Set("", value);
+    return Set("", value, true);
   }
 
-  nlohmann::json Set(const std::string &key, const nlohmann::json &value) {
+  nlohmann::json Set(const std::string &key, const nlohmann::json &value, bool unsafe = false) {
     nlohmann::json tmp;
-    {
-      std::scoped_lock<std::mutex> lock(this->m_storage_mtx);
-      (*this->m_storage)[nlohmann::json::json_pointer(key)] = value;
-      tmp = (*this->m_storage)[nlohmann::json::json_pointer(key)];
+    auto orig_type = Get(key).type();
+    auto new_type = value.type();
+
+    if (unsafe || (new_type == orig_type)) {
+      {
+        std::scoped_lock<std::mutex> lock(this->m_storage_mtx);
+        (*this->m_storage)[nlohmann::json::json_pointer(key)] = value;
+        tmp = (*this->m_storage)[nlohmann::json::json_pointer(key)];
+      }
+    } else {
+      std::cout << "Wrong type: " // TODO, OLSLO, introduce logging.
+      << static_cast<int>(orig_type) << " != "
+      << static_cast<int>(new_type) << std::endl;
     }
+
     return tmp;
   }
 

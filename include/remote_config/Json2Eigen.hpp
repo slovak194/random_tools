@@ -44,3 +44,33 @@ void to_json(nlohmann::json &j, const T &matrix) {
   };
 }
 }
+
+
+
+namespace Eigen {
+
+template<typename T, int R, int C>
+using MapType = Eigen::Map<Eigen::Matrix<T, R, C>, Eigen::Unaligned, Eigen::InnerStride<sizeof(nlohmann::json) / sizeof(T)>>;
+
+template<typename T>
+auto MapMatrixXT(nlohmann::json &json, int rows, int cols) {
+  T *ptr = json[0].get_ptr<T *>();
+  MapType<T, Eigen::Dynamic, Eigen::Dynamic> map(ptr, rows, cols);
+  return map;
+}
+
+template<typename T>
+auto MapVectorXT(nlohmann::json &json) {
+  T *ptr = json[0].get_ptr<T *>();
+  MapType<T, Eigen::Dynamic, 1> map(ptr, json.size());
+  return map;
+}
+
+template<typename T>
+auto MapRowVectorXT(nlohmann::json &json) {
+  T *ptr = json[0].get_ptr<T *>();
+  MapType<T, 1, Eigen::Dynamic> map(ptr, json.size());
+  return map;
+}
+}
+

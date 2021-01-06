@@ -1,4 +1,4 @@
-from pprint import pformat
+from pprint import pprint, pformat
 from collections import UserDict
 
 import zmq
@@ -25,10 +25,11 @@ class ConfigClient:
             self.socket.send(msp.packb({"cmd": "set", "key": key, "value": value}))
             rec = self.socket.recv()
             message = msp.unpackb(rec)
-            if message:
-                return self.get(key)
-            else:
-                return None
+            return message
+            # if message:
+            #     return self.get(key)
+            # else:
+            #     return None
 
         def get(self, key):
             key = self.relax(key)
@@ -56,7 +57,7 @@ class ConfigClient:
         return self.instance.get(item)
 
     def __setitem__(self, key, value):
-        self.instance.set(key, value)
+        pprint(self.instance.set(key, value))
 
     def __repr__(self):
         return pformat(self.instance.get(""))
