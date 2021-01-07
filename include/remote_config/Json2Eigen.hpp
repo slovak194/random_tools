@@ -63,13 +63,19 @@ using ConstMapType = Eigen::Map<
 
 template<typename T>
 auto MapMatrixXT(nlohmann::json &json, int rows, int cols) {
+  if (!(json.is_array() && (json[0].is_number() || json[0].is_boolean()))) {
+    throw std::runtime_error("input json object must be all numbers array");
+  }
   T *ptr = json[0].get_ptr<T *>();
   MapType<T, Eigen::Dynamic, Eigen::Dynamic> map(ptr, rows, cols);
   return map;
 }
 
 template<typename T>
-auto MapConstMatrixXT(const nlohmann::json &json, int rows, int cols) {
+auto MapMatrixXT(const nlohmann::json &json, int rows, int cols) {
+  if (!(json.is_array() && (json[0].is_number() || json[0].is_boolean()))) {
+    throw std::runtime_error("input json object must be all numbers array");
+  }
   const T *ptr = json[0].get_ptr<const T *>();
   ConstMapType<T, Eigen::Dynamic, Eigen::Dynamic> map(ptr, rows, cols);
   return map;

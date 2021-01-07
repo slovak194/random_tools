@@ -7,3 +7,7 @@ add_executable(test_json_eigen_map test_json_eigen_map.cpp)
 target_include_directories(test_json_eigen_map PUBLIC ../include#[[ ${EIGEN3_INCLUDE_DIRS}]])
 target_link_libraries(test_json_eigen_map PUBLIC remote_config)
 
+add_executable(test_types test_types.cpp)
+target_include_directories(test_types PUBLIC ../include#[[ ${EIGEN3_INCLUDE_DIRS}]])
+target_link_libraries(test_types PUBLIC remote_config)
+

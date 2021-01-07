@@ -25,7 +25,7 @@ test:
   vector:
     dtype: "f4"
     shape: [3]
-    data: [1.2, 1.6, 1.9]
+    data: [1.2, 1.6, 1]
     order: "C"
   matrix:
     dtype: "u8"

@@ -31,6 +31,19 @@ nlohmann::json get_types(const nlohmann::json &j) {
   return types.unflatten();
 }
 
+void check_numerical_homogenous_arrays(const nlohmann::json &j) {
+
+  if (j.is_array() && std::all_of(j.begin(), j.end(), [](const auto x) { return x.is_number() || x.is_boolean(); })) {
+    if (std::any_of(j.begin(), j.end(), [zero_type = j[0].type()](const auto x) { return x.type() != zero_type; })) {
+      throw std::runtime_error("Elements in all numbers array have different types: j = " + j.dump() + ", types: " + get_types(j).dump());
+    }
+  } else if (!j.is_primitive()) {
+    for (const auto &[k, v] : j.items()) {
+      check_numerical_homogenous_arrays(v);
+    }
+  }
+}
+
 class Server {
 
  public:
@@ -62,8 +75,6 @@ class Server {
   }
 
  private:
-
-  asio::io_service m_ios;
 
   std::shared_ptr<nlohmann::json> m_storage;
   std::shared_ptr<nlohmann::json> m_types;
@@ -101,7 +112,10 @@ class Server {
 //    std::ofstream o(this->m_tmp_json_file_path);
 //    o << (*m_storage).dump(1, '\t');
 
-    this->Set(nlohmann::json::parse(i));
+    auto tmp = nlohmann::json::parse(i);
+    check_numerical_homogenous_arrays(tmp);
+
+    this->Set(tmp);
 
   }
 
