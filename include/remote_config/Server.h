@@ -22,27 +22,24 @@ namespace asio = boost::asio;
 
 namespace remote_config {
 
-
 nlohmann::json get_types(const nlohmann::json &j) {
   nlohmann::json types;
   auto jf = j.flatten();
-  for (auto& [k, v] : jf.items()) {
+  for (auto&[k, v] : jf.items()) {
     types[k] = static_cast<std::uint64_t>(v.type());
   }
   return types.unflatten();
 }
 
-
-
-class Server : private asio::io_service {
+class Server {
 
  public:
 
   std::string m_config_path;
   std::string m_tmp_json_file_path;
 
-  explicit Server(const std::string &config_path, const std::string &addr = "tcp://127.0.0.1:5555")
-      : m_responder(*this) {
+  explicit Server(asio::io_service &ios, const std::string &config_path, const std::string &addr = "tcp://127.0.0.1:5555")
+      : m_responder(ios) {
     m_responder.bind(addr);
 
     m_buf.reserve(256);
@@ -54,10 +51,6 @@ class Server : private asio::io_service {
 
     Receive();
 
-    std::thread thread([this]() { this->run(); });
-
-    thread.detach();
-
   }
 
   nlohmann::json operator()(const std::string &key) {
@@ -66,10 +59,9 @@ class Server : private asio::io_service {
 
  private:
 
-  std::mutex m_storage_mtx;
-  std::shared_ptr<nlohmann::json> m_storage;
+  asio::io_service m_ios;
 
-  std::mutex m_types_mtx;
+  std::shared_ptr<nlohmann::json> m_storage;
   std::shared_ptr<nlohmann::json> m_types;
 
   azmq::rep_socket m_responder;
@@ -145,21 +137,11 @@ class Server : private asio::io_service {
   }
 
   nlohmann::json Get(const std::string &key) {
-    nlohmann::json tmp;
-    {
-      std::scoped_lock<std::mutex> lock(this->m_storage_mtx);
-      tmp = (*this->m_storage).at(nlohmann::json::json_pointer(key));  // TODO, OLSLO, catch!
-    }
-    return tmp;
+    return (*this->m_storage).at(nlohmann::json::json_pointer(key));
   }
 
   nlohmann::json GetTypes(const std::string &key) {
-    nlohmann::json tmp;
-    {
-      std::scoped_lock<std::mutex> lock(this->m_types_mtx);
-      tmp = (*this->m_types).at(nlohmann::json::json_pointer(key));  // TODO, OLSLO, catch!
-    }
-    return tmp;
+    return (*this->m_types).at(nlohmann::json::json_pointer(key));  // TODO, OLSLO, catch!
   }
 
   void Set(const nlohmann::json &value) {
@@ -171,25 +153,17 @@ class Server : private asio::io_service {
     auto new_types = get_types(value);
 
     if (unsafe) {
-      {
-        std::scoped_lock<std::mutex, std::mutex> lock(this->m_storage_mtx, this->m_types_mtx);
-        (*this->m_storage).at(nlohmann::json::json_pointer(key)) = value;  // TODO, OLSLO, catch!
-        (*this->m_types).at(nlohmann::json::json_pointer(key)) = new_types;  // TODO, OLSLO, catch!
-      }
+      (*this->m_storage).at(nlohmann::json::json_pointer(key)) = value;  // TODO, OLSLO, catch!
+      (*this->m_types).at(nlohmann::json::json_pointer(key)) = new_types;  // TODO, OLSLO, catch!
     } else {
 
       if (nlohmann::json::diff(GetTypes(key), new_types).empty()) {
-        {
-          std::scoped_lock<std::mutex> lock(this->m_storage_mtx);
-          (*this->m_storage).at(nlohmann::json::json_pointer(key)) = value;  // TODO, OLSLO, catch!
-        }
+        (*this->m_storage).at(nlohmann::json::json_pointer(key)) = value;  // TODO, OLSLO, catch!
       } else {
         std::cout << "Wrong type: " << std::endl; // TODO, OLSLO, introduce logging.
       }
     }
   }
-
-
 
 };
 
