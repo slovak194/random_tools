@@ -9,7 +9,7 @@
 int main(int argc, char **argv) {
 
   nlohmann::json j;
-  
+
   j["array_float"] = {1.0, 2.0, 3.0, 4.0, 5.0};
   j["array_unsigned"] = {1U, 2U, 3U, 4U, 5U};
   j["array_integer"] = {-1, -2, -3, -4, -5};
