@@ -53,7 +53,11 @@ class Server {
 
   }
 
-  nlohmann::json operator()(const std::string &key) {
+  const nlohmann::json& operator[](const std::string &key) {
+    return Get(key);
+  }
+
+  nlohmann::json& operator()(const std::string &key) {
     return Get(key);
   }
 
@@ -136,11 +140,11 @@ class Server {
     Receive();
   }
 
-  nlohmann::json Get(const std::string &key) {
+  nlohmann::json& Get(const std::string &key) {
     return (*this->m_storage).at(nlohmann::json::json_pointer(key));
   }
 
-  nlohmann::json GetTypes(const std::string &key) {
+  const nlohmann::json& GetTypes(const std::string &key) {
     return (*this->m_types).at(nlohmann::json::json_pointer(key));  // TODO, OLSLO, catch!
   }
 

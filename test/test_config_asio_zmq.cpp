@@ -9,8 +9,11 @@ using namespace std::chrono_literals;
 void on_timer(boost::asio::steady_timer &timer, remote_config::Server &conf) {
   timer.expires_after(std::chrono::seconds(1));
 
-  nlohmann::json vector = conf("/test/vector/data");
-  std::cout << "use config: " << Eigen::MapRowVectorXT<nlohmann::json::number_float_t>(vector) << std::endl;
+  std::cout << Eigen::MapConstMatrixXT<nlohmann::json::number_float_t>(conf["/test/vector/data"], 1, 3) << std::endl;
+
+  auto m = Eigen::MapMatrixXT<nlohmann::json::number_float_t>(conf("/test/vector/data"), 1, 3);
+
+  m(0,0) += 1.0;
 
   timer.async_wait([&timer, &conf](const boost::system::error_code& error){
     on_timer(timer, conf);

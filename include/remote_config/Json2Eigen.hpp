@@ -49,30 +49,30 @@ namespace Eigen {
 
 template<typename T, int R, int C>
 using MapType = Eigen::Map<
+    Eigen::Matrix<T, R, C>,
+    Eigen::Unaligned,
+    Eigen::InnerStride<sizeof(nlohmann::json) / sizeof(T)>
+>;
+
+template<typename T, int R, int C>
+using ConstMapType = Eigen::Map<
     const Eigen::Matrix<T, R, C>,
     Eigen::Unaligned,
     Eigen::InnerStride<sizeof(nlohmann::json) / sizeof(T)>
 >;
 
 template<typename T>
-auto MapMatrixXT(const nlohmann::json &json, int rows, int cols) {
-  const T *ptr = json[0].get_ptr<const T *>();
+auto MapMatrixXT(nlohmann::json &json, int rows, int cols) {
+  T *ptr = json[0].get_ptr<T *>();
   MapType<T, Eigen::Dynamic, Eigen::Dynamic> map(ptr, rows, cols);
   return map;
 }
 
 template<typename T>
-auto MapVectorXT(const nlohmann::json &json) {
+auto MapConstMatrixXT(const nlohmann::json &json, int rows, int cols) {
   const T *ptr = json[0].get_ptr<const T *>();
-  MapType<T, Eigen::Dynamic, 1> map(ptr, json.size());
+  ConstMapType<T, Eigen::Dynamic, Eigen::Dynamic> map(ptr, rows, cols);
   return map;
 }
 
-template<typename T>
-auto MapRowVectorXT(const nlohmann::json &json) {
-  const T *ptr = json[0].get_ptr<const T *>();
-  MapType<T, 1, Eigen::Dynamic> map(ptr, json.size());
-  return map;
 }
-}
-
