@@ -127,6 +127,9 @@ class Server {
 
     this->Set(tmp);
 
+    std::cout << Get("").dump(1) << std::endl;
+    std::cout << GetTypes("").dump(1) << std::endl;
+
   }
 
   void Receive() {

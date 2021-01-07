@@ -1,6 +1,7 @@
 //#include <remote_config/Server.h>
 
 #include <iostream>
+#include <array>
 
 #include "nlohmann/json.hpp"
 
@@ -30,6 +31,10 @@ int main(int argc, char **argv) {
   std::cout << j.dump(1) << std::endl;
 
   check_homogenous(j);
+
+  using my_json = nlohmann::basic_json<std::map, std::vector, std::string, bool, std::int64_t, std::int64_t, double>;
+
+  my_json jsn;
 
   return 0;
 }
