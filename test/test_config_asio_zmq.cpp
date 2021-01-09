@@ -9,8 +9,8 @@ using namespace std::chrono_literals;
 void on_timer(boost::asio::steady_timer &timer, remote_config::Server &conf) {
   timer.expires_after(std::chrono::seconds(1));
 
-  const auto m_const = conf.CMat<std::uint64_t>("/test/vector/data", 1, 3);
-  auto m = conf.Mat<std::uint64_t>("/test/vector/data", 1, 3);
+  const auto m_const = conf.CMat<std::int64_t>("/test/vector/data", 1, 3);
+  auto m = conf.Mat<std::int64_t>("/test/vector/data", 1, 3);
 
   std::cout << m_const << std::endl;
 

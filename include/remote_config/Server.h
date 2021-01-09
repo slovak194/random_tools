@@ -44,6 +44,28 @@ void check_numerical_homogenous_arrays(const nlohmann::json &j) {
   }
 }
 
+template <typename I, typename F>
+void fix_arrays(nlohmann::json &j) {
+
+  static_assert(std::is_integral_v<I>, "I must be integral type");
+  static_assert(std::is_floating_point_v<F>, "F must be floating point type");
+
+  if (j.is_array() && std::all_of(j.begin(), j.end(), [](const auto x) { return x.is_number(); })) {
+
+    if (std::all_of(j.begin(), j.end(), [](const auto x) { return x.is_number_integer() || x.is_number_unsigned(); })){
+      for (auto & el : j) { el = static_cast<I>(el.get<I>()); }
+    } else {
+      for (auto & el : j) { el = static_cast<F>(el.get<F>()); }
+    }
+
+  } else if (!j.is_primitive()) {
+    for (auto &v : j) {
+      fix_arrays<I, F>(v);
+    }
+  }
+}
+
+
 class Server {
 
  public:
@@ -123,6 +145,7 @@ class Server {
 //    o << (*m_storage).dump(1, '\t');
 
     auto tmp = nlohmann::json::parse(i);
+    fix_arrays<std::int64_t, double>(tmp);
     check_numerical_homogenous_arrays(tmp);
 
     this->Set(tmp);
@@ -192,10 +215,13 @@ class Server {
       (*this->m_types).at(nlohmann::json::json_pointer(key)) = new_types;  // TODO, OLSLO, catch!
     } else {
 
-      if (nlohmann::json::diff(GetTypes(key), new_types).empty()) {
+
+      auto diff = nlohmann::json::diff(GetTypes(key), new_types);
+      if (diff.empty()) {
         (*this->m_storage).at(nlohmann::json::json_pointer(key)) = value;  // TODO, OLSLO, catch!
       } else {
         std::cout << "Wrong type: " << std::endl; // TODO, OLSLO, introduce logging.
+        std::cout << diff.dump(1) << std::endl; // TODO, OLSLO, introduce logging.
       }
     }
   }
