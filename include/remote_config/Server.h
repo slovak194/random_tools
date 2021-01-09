@@ -86,25 +86,6 @@ void fix_arrays(nlohmann::json &j) {
   }
 }
 
-template <typename I, typename F>
-void fix_values(nlohmann::json &j) {
-
-  static_assert(std::is_integral_v<I>, "I must be integral type");
-  static_assert(std::is_floating_point_v<F>, "F must be floating point type");
-
-  if (j.is_primitive()) {
-    if (j.is_number_unsigned() || j.is_number_integer()){
-      for (auto & el : j) { el = static_cast<I>(el.get<I>()); }
-    } else if (j.is_number_float()) {
-      for (auto & el : j) { el = static_cast<F>(el.get<F>()); }
-    }
-  } if (!j.is_primitive()) {
-    for (auto &v : j) {
-      fix_arrays<I, F>(v);
-    }
-  }
-}
-
 
 nlohmann::json apply_types(const nlohmann::json &j, const nlohmann::json &types) {
   // try cas to old types
