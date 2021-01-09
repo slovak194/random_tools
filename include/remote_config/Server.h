@@ -204,15 +204,21 @@ class Server {
       this->m_tmp_json_file_path = config_path + ".json";
     }
 
-    std::string command = std::string("python3 -c '") +
-        std::string("config_file_yaml_path = \"") + this->m_config_path + std::string("\"\n") +
-        "import yaml\n"
-        "import json\n"
-        "with open(config_file_yaml_path, \"r\") as yaml_in, open(\"" + this->m_tmp_json_file_path +
-        "\", \"w\") as json_out:\n"
-        "    yaml_object = yaml.safe_load(yaml_in)\n"
-        "    json.dump(yaml_object, json_out)\n"
-        "'";
+    // TODO, OLSLO, get rid of python conversion.
+//    std::string command = std::string("python3 -c '") +
+//        std::string("config_file_yaml_path = \"") + this->m_config_path + std::string("\"\n") +
+//        "import yaml\n"
+//        "import json\n"
+//        "with open(config_file_yaml_path, \"r\") as yaml_in, open(\"" + this->m_tmp_json_file_path +
+//        "\", \"w\") as json_out:\n"
+//        "    yaml_object = yaml.safe_load(yaml_in)\n"
+//        "    json.dump(yaml_object, json_out, indent=\" \")\n"
+//        "'";
+
+    std::string command = std::string(
+        "python3 -m remote_config.yaml2json ")
+        + this->m_config_path + std::string(" ")
+        + this->m_tmp_json_file_path;
 
     std::cout << std::endl << command << std::endl;
 
@@ -224,9 +230,6 @@ class Server {
 
     std::ifstream i(this->m_tmp_json_file_path);
 
-//    std::ofstream o(this->m_tmp_json_file_path);
-//    o << (*m_storage).dump(1, '\t');
-
     auto tmp = nlohmann::json::parse(i);
     fix_arrays<std::int64_t, double>(tmp);
     check_numerical_homogenous_arrays(tmp);
@@ -234,9 +237,6 @@ class Server {
     this->Set(tmp);
 
     std::cout << pprint(Get("")).dump(1) << std::endl;
-
-//    std::cout << Get("").dump(1) << std::endl;
-//    std::cout << get_type_names(GetTypes("")).dump(1) << std::endl;
 
   }
 
@@ -251,25 +251,29 @@ class Server {
 
   void OnReceive(const boost::system::error_code &error, size_t bytes_transferred) {
 
-    this->m_buf.resize(bytes_transferred);
-
     nlohmann::json repl;
 
-    try {
-      nlohmann::json req = nlohmann::json::from_msgpack(this->m_buf);
-      std::cout << req.dump() << std::endl;
+    if (error) {
+      repl["error"] = error.message();
+    } else {
+      this->m_buf.resize(bytes_transferred);
 
-      if (req["cmd"].get<std::string>() == "get") {
-        repl = this->Get(req["key"].get<std::string>());
-      } else if (req["cmd"].get<std::string>() == "set") {
-        this->Set(req["key"].get<std::string>(), req["value"]);
-        repl = this->Get(req["key"].get<std::string>());
-      } else if (req["cmd"].get<std::string>() == "load") {
-        this->Load(req["value"].get<std::string>());
-        repl = this->Get("");
+      try {
+        nlohmann::json req = nlohmann::json::from_msgpack(this->m_buf);
+        std::cout << req.dump() << std::endl;
+
+        if (req["cmd"].get<std::string>() == "get") {
+          repl = this->Get(req["key"].get<std::string>());
+        } else if (req["cmd"].get<std::string>() == "set") {
+          this->Set(req["key"].get<std::string>(), req["value"]);
+          repl = this->Get(req["key"].get<std::string>());
+        } else if (req["cmd"].get<std::string>() == "load") {
+          this->Load(req["value"].get<std::string>());
+          repl = this->Get("");
+        }
+      } catch (const std::exception &e) {
+        repl["error"] = std::string(e.what());
       }
-    } catch (const std::exception &e) {
-      repl["error"] = std::string(e.what());
     }
 
     this->m_responder.async_send(
@@ -288,7 +292,7 @@ class Server {
   }
 
   const nlohmann::json& GetTypes(const std::string &key) {
-    return (*this->m_types).at(nlohmann::json::json_pointer(key));  // TODO, OLSLO, catch!
+    return (*this->m_types).at(nlohmann::json::json_pointer(key));
   }
 
   void Set(const nlohmann::json &value) {
@@ -300,13 +304,13 @@ class Server {
     auto old_types = GetTypes(key);
 
     if (unsafe) {
-      (*this->m_storage).at(nlohmann::json::json_pointer(key)) = value;  // TODO, OLSLO, catch!
-      (*this->m_types).at(nlohmann::json::json_pointer(key)) = new_types;  // TODO, OLSLO, catch!
+      (*this->m_storage).at(nlohmann::json::json_pointer(key)) = value;
+      (*this->m_types).at(nlohmann::json::json_pointer(key)) = new_types;
     } else {
 
       auto diff = nlohmann::json::diff(old_types, new_types);
       if (diff.empty()) {
-        (*this->m_storage).at(nlohmann::json::json_pointer(key)) = value;  // TODO, OLSLO, catch!
+        (*this->m_storage).at(nlohmann::json::json_pointer(key)) = value;
       } else {
 
         auto updated_value = apply_types(value, old_types);
@@ -314,12 +318,13 @@ class Server {
 
         diff = nlohmann::json::diff(old_types, new_types);
         if (diff.empty()) {
-          (*this->m_storage).at(nlohmann::json::json_pointer(key)) = updated_value;  // TODO, OLSLO, catch!
+          (*this->m_storage).at(nlohmann::json::json_pointer(key)) = updated_value;
         } else {
-          std::cout << "Wrong type: " << std::endl; // TODO, OLSLO, introduce logging.
-//          std::cout << diff.dump(1) << std::endl; // TODO, OLSLO, introduce logging.
-          std::cout << "old: " << get_type_names(old_types).dump(1) << std::endl; // TODO, OLSLO, introduce logging.
-          std::cout << "new: " << get_type_names(new_types).dump(1) << std::endl; // TODO, OLSLO, introduce logging.
+          throw std::runtime_error(
+              std::string("Cannot cast new types to original types")
+              + "old: " + get_type_names(old_types).dump(1)
+              + ", new: " + get_type_names(new_types).dump(1)
+              );
         }
       }
     }
