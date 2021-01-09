@@ -1,0 +1,10 @@
+README.md
+setup.py
+remote_config/__init__.py
+remote_config/client.py
+remote_config/server.py
+remote_config.egg-info/PKG-INFO
+remote_config.egg-info/SOURCES.txt
+remote_config.egg-info/dependency_links.txt
+remote_config.egg-info/top_level.txt
+test/test_server.py

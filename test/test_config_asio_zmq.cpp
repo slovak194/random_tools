@@ -14,7 +14,7 @@ void on_timer(boost::asio::steady_timer &timer, remote_config::Server &conf) {
 
   std::cout << m_const << std::endl;
 
-  m(0,0) += 1.0;
+//  m(0,0) += 1.0;
 
   timer.async_wait([&timer, &conf](const boost::system::error_code& error){
     on_timer(timer, conf);

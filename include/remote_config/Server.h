@@ -31,6 +31,25 @@ nlohmann::json get_types(const nlohmann::json &j) {
   return types.unflatten();
 }
 
+nlohmann::json get_type_names(const nlohmann::json &j) {
+  nlohmann::json types;
+  auto jf = j.flatten();
+  for (auto&[k, v] : jf.items()) {
+    types[k] = json_type_names[v.get<int>()];
+  }
+  return types.unflatten();
+}
+
+nlohmann::json pprint(const nlohmann::json &j) {
+  nlohmann::json types;
+  auto jf = j.flatten();
+  for (auto&[k, v] : jf.items()) {
+    auto type = static_cast<int>(v.type());
+    types[k] = v.dump() + ": " + json_type_names[type];
+  }
+  return types.unflatten();
+}
+
 void check_numerical_homogenous_arrays(const nlohmann::json &j) {
 
   if (j.is_array() && std::all_of(j.begin(), j.end(), [](const auto x) { return x.is_number() || x.is_boolean(); })) {
@@ -64,6 +83,70 @@ void fix_arrays(nlohmann::json &j) {
     }
   }
 }
+
+template <typename I, typename F>
+void fix_values(nlohmann::json &j) {
+
+  static_assert(std::is_integral_v<I>, "I must be integral type");
+  static_assert(std::is_floating_point_v<F>, "F must be floating point type");
+
+  if (j.is_primitive()) {
+    if (j.is_number_unsigned() || j.is_number_integer()){
+      for (auto & el : j) { el = static_cast<I>(el.get<I>()); }
+    } else if (j.is_number_float()) {
+      for (auto & el : j) { el = static_cast<F>(el.get<F>()); }
+    }
+  } if (!j.is_primitive()) {
+    for (auto &v : j) {
+      fix_arrays<I, F>(v);
+    }
+  }
+}
+
+
+nlohmann::json apply_types(const nlohmann::json &j, const nlohmann::json &types) {
+  // try cas to old types
+  auto new_values_flat = j.flatten();
+  auto old_types_flat = types.flatten();
+
+  for (auto [k, v] : old_types_flat.items()) {
+    switch (static_cast<nlohmann::json::value_t>(v.get<std::uint8_t>()))
+    {
+      case nlohmann::json::value_t::number_unsigned:
+      {
+        std::cout << "apply_types: number_unsigned_t" << std::endl;
+        new_values_flat[k] = static_cast<nlohmann::json::number_unsigned_t>(new_values_flat[k]);
+        break;
+      }
+      case nlohmann::json::value_t::number_integer:
+      {
+        std::cout << "apply_types: number_integer_t" << std::endl;
+        new_values_flat[k] = static_cast<nlohmann::json::number_integer_t>(new_values_flat[k]);
+        break;
+      }
+      case nlohmann::json::value_t::number_float:
+      {
+        std::cout << "apply_types: number_float_t" << std::endl;
+        new_values_flat[k] = static_cast<nlohmann::json::number_float_t>(new_values_flat[k]);
+        break;
+      }
+      case nlohmann::json::value_t::boolean:
+      {
+        std::cout << "apply_types: boolean_t" << std::endl;
+        new_values_flat[k] = static_cast<nlohmann::json::boolean_t>(new_values_flat[k]);
+        break;
+      }
+
+      default:
+        break;
+    }
+  }
+
+  auto new_values = new_values_flat.unflatten();
+
+  return new_values;
+}
+
 
 
 class Server {
@@ -150,8 +233,10 @@ class Server {
 
     this->Set(tmp);
 
-    std::cout << Get("").dump(1) << std::endl;
-    std::cout << GetTypes("").dump(1) << std::endl;
+    std::cout << pprint(Get("")).dump(1) << std::endl;
+
+//    std::cout << Get("").dump(1) << std::endl;
+//    std::cout << get_type_names(GetTypes("")).dump(1) << std::endl;
 
   }
 
@@ -168,19 +253,23 @@ class Server {
 
     this->m_buf.resize(bytes_transferred);
 
-    nlohmann::json req = nlohmann::json::from_msgpack(this->m_buf);
-    std::cout << req.dump() << std::endl;
-
     nlohmann::json repl;
 
-    if (req["cmd"].get<std::string>() == "get") {
-      repl = this->Get(req["key"].get<std::string>());
-    } else if (req["cmd"].get<std::string>() == "set") {
-      this->Set(req["key"].get<std::string>(), req["value"]);
-      repl = this->Get(req["key"].get<std::string>());
-    } else if (req["cmd"].get<std::string>() == "load") {
-      this->Load(req["value"].get<std::string>());
-      repl = this->Get("");
+    try {
+      nlohmann::json req = nlohmann::json::from_msgpack(this->m_buf);
+      std::cout << req.dump() << std::endl;
+
+      if (req["cmd"].get<std::string>() == "get") {
+        repl = this->Get(req["key"].get<std::string>());
+      } else if (req["cmd"].get<std::string>() == "set") {
+        this->Set(req["key"].get<std::string>(), req["value"]);
+        repl = this->Get(req["key"].get<std::string>());
+      } else if (req["cmd"].get<std::string>() == "load") {
+        this->Load(req["value"].get<std::string>());
+        repl = this->Get("");
+      }
+    } catch (const std::exception &e) {
+      repl["error"] = std::string(e.what());
     }
 
     this->m_responder.async_send(
@@ -207,21 +296,31 @@ class Server {
   }
 
   void Set(const std::string &key, const nlohmann::json &value, bool unsafe = false) {
-
     auto new_types = get_types(value);
+    auto old_types = GetTypes(key);
 
     if (unsafe) {
       (*this->m_storage).at(nlohmann::json::json_pointer(key)) = value;  // TODO, OLSLO, catch!
       (*this->m_types).at(nlohmann::json::json_pointer(key)) = new_types;  // TODO, OLSLO, catch!
     } else {
 
-
-      auto diff = nlohmann::json::diff(GetTypes(key), new_types);
+      auto diff = nlohmann::json::diff(old_types, new_types);
       if (diff.empty()) {
         (*this->m_storage).at(nlohmann::json::json_pointer(key)) = value;  // TODO, OLSLO, catch!
       } else {
-        std::cout << "Wrong type: " << std::endl; // TODO, OLSLO, introduce logging.
-        std::cout << diff.dump(1) << std::endl; // TODO, OLSLO, introduce logging.
+
+        auto updated_value = apply_types(value, old_types);
+        new_types = get_types(updated_value);
+
+        diff = nlohmann::json::diff(old_types, new_types);
+        if (diff.empty()) {
+          (*this->m_storage).at(nlohmann::json::json_pointer(key)) = updated_value;  // TODO, OLSLO, catch!
+        } else {
+          std::cout << "Wrong type: " << std::endl; // TODO, OLSLO, introduce logging.
+//          std::cout << diff.dump(1) << std::endl; // TODO, OLSLO, introduce logging.
+          std::cout << "old: " << get_type_names(old_types).dump(1) << std::endl; // TODO, OLSLO, introduce logging.
+          std::cout << "new: " << get_type_names(new_types).dump(1) << std::endl; // TODO, OLSLO, introduce logging.
+        }
       }
     }
   }

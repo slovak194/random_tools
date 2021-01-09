@@ -15,6 +15,7 @@ class ConfigClient:
 
         @staticmethod
         def relax(key):
+            assert isinstance(key, str)
             if len(key) > 0 and key[0] != "/":
                 return "/" + key
             else:
@@ -22,7 +23,15 @@ class ConfigClient:
 
         def set(self, key, value):
             key = self.relax(key)
+
+            while self.socket.poll(10, zmq.POLLIN) & zmq.POLLIN:
+                _ = self.socket.recv()
+
             self.socket.send(msp.packb({"cmd": "set", "key": key, "value": value}))
+
+            if self.socket.poll(1000, zmq.POLLIN) == 0:
+                return None
+
             rec = self.socket.recv()
             message = msp.unpackb(rec)
             return message
@@ -33,8 +42,21 @@ class ConfigClient:
 
         def get(self, key):
             key = self.relax(key)
+            print("try send")
+
+            while self.socket.poll(10, zmq.POLLIN) & zmq.POLLIN:
+                _ = self.socket.recv()
+
             self.socket.send(msp.packb({"cmd": "get", "key": key}))
+
+            print("try receive")
+
+            if self.socket.poll(1000, zmq.POLLIN) == 0:
+                return None
+
             rec = self.socket.recv()
+            print("try unpack")
+
             message = msp.unpackb(rec)
             return message
 
