@@ -97,25 +97,25 @@ nlohmann::json apply_types(const nlohmann::json &j, const nlohmann::json &types)
     {
       case nlohmann::json::value_t::number_unsigned:
       {
-        std::cout << "apply_types: number_unsigned_t" << std::endl;
+        std::cout << "apply_types: number_unsigned_t" << std::endl;  // TODO, OLSLO, logging
         new_values_flat[k] = static_cast<nlohmann::json::number_unsigned_t>(new_values_flat[k]);
         break;
       }
       case nlohmann::json::value_t::number_integer:
       {
-        std::cout << "apply_types: number_integer_t" << std::endl;
+        std::cout << "apply_types: number_integer_t" << std::endl;  // TODO, OLSLO, logging
         new_values_flat[k] = static_cast<nlohmann::json::number_integer_t>(new_values_flat[k]);
         break;
       }
       case nlohmann::json::value_t::number_float:
       {
-        std::cout << "apply_types: number_float_t" << std::endl;
+        std::cout << "apply_types: number_float_t" << std::endl;  // TODO, OLSLO, logging
         new_values_flat[k] = static_cast<nlohmann::json::number_float_t>(new_values_flat[k]);
         break;
       }
       case nlohmann::json::value_t::boolean:
       {
-        std::cout << "apply_types: boolean_t" << std::endl;
+        std::cout << "apply_types: boolean_t" << std::endl;  // TODO, OLSLO, logging
         new_values_flat[k] = static_cast<nlohmann::json::boolean_t>(new_values_flat[k]);
         break;
       }
@@ -141,7 +141,7 @@ class Server {
 
   explicit Server(asio::io_service &ios, const std::string &config_path, const std::string &addr = "tcp://127.0.0.1:5555")
       : m_responder(ios), m_signals(ios, SIGUSR1) {
-    m_responder.bind(addr);
+    m_responder.bind(addr);  // TODO, OLSLO, optional zmq interface. Allow reload only.
 
     m_buf.reserve(256);
 
@@ -206,7 +206,7 @@ class Server {
         + this->m_config_path + std::string(" ")
         + this->m_tmp_json_file_path;
 
-    std::cout << std::endl << command << std::endl;
+    std::cout << std::endl << command << std::endl;  // TODO, OLSLO, logging
 
     auto res = system(command.c_str());
 
@@ -222,7 +222,7 @@ class Server {
 
     this->Set(tmp);
 
-    std::cout << pprint(Get("")).dump(1) << std::endl;
+    std::cout << pprint(Get("")).dump(1) << std::endl;  // TODO, OLSLO, logging
 
   }
 
@@ -246,7 +246,7 @@ class Server {
 
       try {
         nlohmann::json req = nlohmann::json::from_msgpack(this->m_buf);
-        std::cout << req.dump() << std::endl;
+        std::cout << req.dump() << std::endl;  // TODO, OLSLO, logging
 
         if (req["cmd"].get<std::string>() == "get") {
           repl = this->Get(req["key"].get<std::string>());
@@ -274,7 +274,7 @@ class Server {
     // kill -s USR1 $(pidof test_config_asio_zmq)
 
     m_signals.async_wait([this](const boost::system::error_code &error, int signal_number) {
-      std::cout << "Reloading config ..." << signal_number << std::endl;
+      std::cout << "Reloading config ..." << signal_number << std::endl;  // TODO, OLSLO, logging
       this->Load();
       this->SetSignalHandler();
     });
