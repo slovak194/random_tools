@@ -14,6 +14,8 @@
 
 #include <azmq/socket.hpp>
 #include <boost/asio.hpp>
+#include <boost/asio/signal_set.hpp>
+
 #include <nlohmann/json.hpp>
 
 #include "Json2Eigen.hpp"
@@ -157,7 +159,7 @@ class Server {
   std::string m_tmp_json_file_path;
 
   explicit Server(asio::io_service &ios, const std::string &config_path, const std::string &addr = "tcp://127.0.0.1:5555")
-      : m_responder(ios) {
+      : m_responder(ios), m_signals(ios, SIGUSR1) {
     m_responder.bind(addr);
 
     m_buf.reserve(256);
@@ -166,6 +168,8 @@ class Server {
     m_types = std::make_shared<nlohmann::json>();
 
     Load(config_path);
+
+    SetSignalHandler();
 
     Receive();
 
@@ -196,6 +200,7 @@ class Server {
 
   azmq::rep_socket m_responder;
   std::vector<std::uint8_t> m_buf;
+  boost::asio::signal_set m_signals;
 
   void Load(const std::string &config_path = "") {
 
@@ -281,6 +286,17 @@ class Server {
         [this](auto ...vn) {});
 
     Receive();
+  }
+
+  void SetSignalHandler() {
+
+    // kill -s USR1 $(pidof test_config_asio_zmq)
+
+    m_signals.async_wait([this](const boost::system::error_code &error, int signal_number) {
+      std::cout << "Reloading config ..." << signal_number << std::endl;
+      this->Load();
+      this->SetSignalHandler();
+    });
   }
 
   nlohmann::json& Get(const std::string &key) {
