@@ -2,7 +2,7 @@ import unittest
 import subprocess as sp
 from remote_config import ConfigClient
 
-server_exe_file_path = "/home/slovak/remote-config/cmake-build-debug/test/test_config_asio_zmq"
+server_exe_file_path = "/home/slovak/remote-config/cmake-build-debug/test/test_server"
 
 
 class TestMoteusProtocolPython(unittest.TestCase):

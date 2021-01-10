@@ -9,8 +9,8 @@ using namespace std::chrono_literals;
 void on_timer(boost::asio::steady_timer &timer, remote_config::Server &conf) {
   timer.expires_after(std::chrono::seconds(1));
 
-  auto m_const = Eigen::MapMatrixXT<double, 3, 3>(conf("/test/matrix/data"));
-  auto m_mutable = Eigen::MapMatrixXT<std::int64_t>(conf["/test/vector/data"]);
+  auto m_const = remote_config::MapMatrixXT<double, 3, 3>(conf("/test/matrix/data"));
+  auto m_mutable = remote_config::MapMatrixXT<std::int64_t>(conf["/test/vector/data"]);
 
   std::cout << m_const << std::endl;
 
