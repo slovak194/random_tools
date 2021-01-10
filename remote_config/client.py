@@ -35,27 +35,19 @@ class ConfigClient:
             rec = self.socket.recv()
             message = msp.unpackb(rec)
             return message
-            # if message:
-            #     return self.get(key)
-            # else:
-            #     return None
 
         def get(self, key):
             key = self.relax(key)
-            print("try send")
 
             while self.socket.poll(10, zmq.POLLIN) & zmq.POLLIN:
                 _ = self.socket.recv()
 
             self.socket.send(msp.packb({"cmd": "get", "key": key}))
 
-            print("try receive")
-
             if self.socket.poll(1000, zmq.POLLIN) == 0:
                 return None
 
             rec = self.socket.recv()
-            print("try unpack")
 
             message = msp.unpackb(rec)
             return message
