@@ -101,22 +101,23 @@ namespace Eigen {
 
 template<typename T, int R, int C>
 using MapType = Eigen::Map<
-    Eigen::Matrix<T, R, C>,
+    Eigen::Matrix<T, R, C, Eigen::RowMajor>,
     Eigen::Unaligned,
     Eigen::InnerStride<sizeof(nlohmann::json) / sizeof(T)>
 >;
 
 template<typename T, int R, int C>
 using ConstMapType = Eigen::Map<
-    const Eigen::Matrix<T, R, C>,
+    const Eigen::Matrix<T, R, C, Eigen::RowMajor>,
     Eigen::Unaligned,
     Eigen::InnerStride<sizeof(nlohmann::json) / sizeof(T)>
 >;
 
 template<typename T>
-auto MapMatrixXT(nlohmann::json &json, int rows, int cols) {
+void check_array(const nlohmann::json &json, int rows, int cols) {
+
   if (!(json.is_array() && (json[0].is_number() || json[0].is_boolean()))) {
-    throw std::runtime_error("input json object must be all numbers array");
+    throw std::runtime_error("input json object must be all numbers or all booleans array");
   }
 
   if (json_type_to_enum<T>::value != json[0].type()) {
@@ -127,28 +128,32 @@ auto MapMatrixXT(nlohmann::json &json, int rows, int cols) {
             + json_type_names[static_cast<int>(json[0].type())]);
   }
 
-  T *ptr = json[0].get_ptr<T *>();
-  MapType<T, Eigen::Dynamic, Eigen::Dynamic> map(ptr, rows, cols);
-  return map;
 }
 
-template<typename T>
-auto MapMatrixXT(const nlohmann::json &json, int rows, int cols) {
-  if (!(json.is_array() && (json[0].is_number() || json[0].is_boolean()))) {
-    throw std::runtime_error("input json object must be all numbers array");
-  }
 
-  if (json_type_to_enum<T>::value != json[0].type()) {
-    throw std::runtime_error(
-        std::string("Map to wrong type: ")
-        + json_type_names[static_cast<int>(json_type_to_enum<T>::value)]
-        + " != "
-        + json_type_names[static_cast<int>(json[0].type())]);
-  }
+template<typename T, int rows=1, int cols=Eigen::Dynamic, typename J>
+auto MapMatrixXT(J &json) {
+  check_array<T>(json, rows, cols);
 
-  const T *ptr = json[0].get_ptr<const T *>();
-  ConstMapType<T, Eigen::Dynamic, Eigen::Dynamic> map(ptr, rows, cols);
-  return map;
+  if constexpr (std::is_const_v<J>) {
+    if constexpr (cols == Eigen::Dynamic) {
+      return ConstMapType<T, rows, cols>(json[0].template get_ptr<const T *>(), json.size());
+    } else {
+        if ((rows*cols) != json.size()) {
+          throw std::runtime_error("rows*cols != vector.size()");
+        }
+        return ConstMapType<T, rows, cols>(json[0].template get_ptr<const T *>());
+    };
+  } else {
+    if constexpr (cols == Eigen::Dynamic) {
+      return MapType<T, rows, cols>(json[0].template get_ptr<T *>(), json.size());
+    } else {
+      if ((rows*cols) != json.size()) {
+        throw std::runtime_error("rows*cols != vector.size()");
+      }
+      return MapType<T, rows, cols>(json[0].template get_ptr<T *>());
+    };
+  }
 }
 
 }

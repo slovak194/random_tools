@@ -156,22 +156,12 @@ class Server {
 
   }
 
-  template <typename T>
-  auto Mat(const std::string &key, int rows, int cols) {
-    return Eigen::MapMatrixXT<T>(Get(key), rows, cols);
-  }
-
-  template <typename T>
-  auto CMat(const std::string &key, int rows, int cols) {
-    return Eigen::MapMatrixXT<T>(GetConst(key), rows, cols);
-  }
-
-  const nlohmann::json& operator[](const std::string &key) {
+  nlohmann::json& operator[](const std::string &key) {
     return Get(key);
   }
 
-  nlohmann::json& operator()(const std::string &key) {
-    return Get(key);
+  const nlohmann::json& operator()(const std::string &key) {
+    return GetConst(key);
   }
 
  private:
