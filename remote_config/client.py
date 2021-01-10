@@ -78,5 +78,8 @@ class ConfigClient:
 
 # %%
 if __name__ == "__main__":
+
+    # Usage: ipython -m remote_config.client -i
+
     c = ConfigClient()
 
