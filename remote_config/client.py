@@ -1,5 +1,4 @@
 from pprint import pprint, pformat
-from collections import UserDict
 
 import zmq
 import msgpack as msp
