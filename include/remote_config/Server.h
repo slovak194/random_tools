@@ -270,7 +270,7 @@ class Server {
 
 #ifdef USE_ZMQ
 
-    m_responder.bind(addr);  // TODO, OLSLO, optional zmq interface. Allow reload only.
+    m_responder.bind(addr);
     m_buf.reserve(256);
 
     Receive();
