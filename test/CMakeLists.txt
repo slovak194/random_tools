@@ -10,3 +10,5 @@ target_link_libraries(test_server PUBLIC
         nlohmann_json::nlohmann_json
         zmq
         )
+target_compile_definitions(test_server PUBLIC USE_ZMQ)
+target_link_libraries(test_server PUBLIC zmq)

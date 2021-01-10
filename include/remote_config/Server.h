@@ -13,7 +13,12 @@
 #include <memory>
 #include <type_traits>
 
+//#define USE_ZMQ
+
+#ifdef USE_ZMQ
 #include <azmq/socket.hpp>
+#endif // USE_ZMQ
+
 #include <boost/asio.hpp>
 #include <boost/asio/signal_set.hpp>
 
@@ -246,13 +251,15 @@ class Server {
 
   std::string m_config_path;
   std::string m_tmp_json_file_path;
-  bool m_verbose = false;
+  bool m_verbose = true;
 
-  explicit Server(asio::io_service &ios, const std::string &config_path, const std::string &addr = "tcp://127.0.0.1:5555", bool verbose = false)
-      : m_responder(ios), m_signals(ios, SIGUSR1), m_verbose(verbose) {
-    m_responder.bind(addr);  // TODO, OLSLO, optional zmq interface. Allow reload only.
+  explicit Server(asio::io_service &ios, const std::string &config_path, const std::string &addr = "tcp://127.0.0.1:5555", bool verbose = true)
+      :
+#ifdef USE_ZMQ
+      m_responder(ios),
+#endif
+      m_signals(ios, SIGUSR1), m_verbose(verbose) {
 
-    m_buf.reserve(256);
 
     m_storage = std::make_shared<nlohmann::json>();
     m_types = std::make_shared<nlohmann::json>();
@@ -261,7 +268,13 @@ class Server {
 
     SetSignalHandler();
 
+#ifdef USE_ZMQ
+
+    m_responder.bind(addr);  // TODO, OLSLO, optional zmq interface. Allow reload only.
+    m_buf.reserve(256);
+
     Receive();
+#endif
 
   }
 
@@ -278,7 +291,10 @@ class Server {
   std::shared_ptr<nlohmann::json> m_storage;
   std::shared_ptr<nlohmann::json> m_types;
 
+#ifdef USE_ZMQ
   azmq::rep_socket m_responder;
+#endif
+
   std::vector<std::uint8_t> m_buf;
   boost::asio::signal_set m_signals;
 
@@ -325,6 +341,7 @@ class Server {
 
   }
 
+#ifdef USE_ZMQ
   void Receive() {
 
     this->m_buf.resize(1024);
@@ -367,6 +384,8 @@ class Server {
 
     Receive();
   }
+
+#endif // USE_ZMQ
 
   void SetSignalHandler() {
 
