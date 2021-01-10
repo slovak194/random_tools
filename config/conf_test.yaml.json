@@ -8,7 +8,7 @@
   "wheel_base": 0.183
  },
  "ctrl": {
-  "theta_k": 3.0,
+  "theta_k": 30,
   "theta_dot_k": 2.3,
   "x_k": 0.0,
   "x_dot_k": -2.0,

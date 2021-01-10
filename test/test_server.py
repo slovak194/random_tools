@@ -16,6 +16,13 @@ class TestMoteusProtocolPython(unittest.TestCase):
     def tearDownClass(cls):
         cls.server.kill()
 
+    def test_Scalars(self):
+        self.assertEqual(self.c.set("ctrl/theta_k", -30), -30)
+        self.assertEqual(self.c.set("ctrl/theta_k", -30.0), -30)
+        self.assertEqual(self.c.set("ctrl/theta_k", 30.0), 30)
+        self.assertEqual(self.c.set("ctrl/theta_k", 30), 30)
+        self.assertEqual(self.c.set("ctrl/theta_k", 30.5), 30)
+
     def test_GetMissuse(self):
         self.assertEqual(self.c.get("fasldjfalseaesf"), {'error': "[json.exception.out_of_range.403] key 'fasldjfalseaesf' not found"})
 

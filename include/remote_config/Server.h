@@ -204,6 +204,17 @@ void fix_arrays(nlohmann::json &j) {
 }
 
 
+void fix_unsigned(nlohmann::json &j) {
+  if (j.is_primitive() && j.is_number_unsigned()) {
+    j = static_cast<nlohmann::json::number_integer_t>(j.get<nlohmann::json::number_unsigned_t>());
+  } else if (!j.is_primitive()) {
+    for (auto &v : j) {
+      fix_unsigned(v);
+    }
+  }
+}
+
+
 nlohmann::json apply_types(const nlohmann::json &j, const nlohmann::json &types) {
   // try cas to old types
   auto new_values_flat = j.flatten();
@@ -332,6 +343,7 @@ class Server {
     std::ifstream i(this->m_tmp_json_file_path);
 
     auto tmp = nlohmann::json::parse(i);
+    fix_unsigned(tmp);
     fix_arrays<std::int64_t, double>(tmp);
     check_numerical_homogenous_arrays(tmp);
 
