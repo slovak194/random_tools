@@ -44,15 +44,31 @@ static constexpr const char * json_type_names[] = {
     "discarded"         ///< discarded by the parser callback function
 };
 
-template <typename T> constexpr nlohmann::json::value_t json_type_to_enum = nlohmann::json::value_t::null;
-template <> constexpr nlohmann::json::value_t json_type_to_enum<nlohmann::json::object_t> = nlohmann::json::value_t::object;
-template <> constexpr nlohmann::json::value_t json_type_to_enum<nlohmann::json::array_t> = nlohmann::json::value_t::array;
-template <> constexpr nlohmann::json::value_t json_type_to_enum<nlohmann::json::string_t> = nlohmann::json::value_t::string;
-template <> constexpr nlohmann::json::value_t json_type_to_enum<nlohmann::json::boolean_t> = nlohmann::json::value_t::boolean;
-template <> constexpr nlohmann::json::value_t json_type_to_enum<nlohmann::json::number_integer_t> = nlohmann::json::value_t::number_integer;
-template <> constexpr nlohmann::json::value_t json_type_to_enum<nlohmann::json::number_unsigned_t> = nlohmann::json::value_t::number_unsigned;
-template <> constexpr nlohmann::json::value_t json_type_to_enum<nlohmann::json::number_float_t> = nlohmann::json::value_t::number_float;
-template <> constexpr nlohmann::json::value_t json_type_to_enum<nlohmann::json::binary_t> = nlohmann::json::value_t::binary;
+template <nlohmann::json::value_t T> struct json_enum_to_type { using type = nullptr_t; };
+template <> struct json_enum_to_type<nlohmann::json::value_t::object> { using type = nlohmann::json::object_t; };
+template <> struct json_enum_to_type<nlohmann::json::value_t::array> { using type = nlohmann::json::array_t; };
+template <> struct json_enum_to_type<nlohmann::json::value_t::string> { using type = nlohmann::json::string_t; };
+template <> struct json_enum_to_type<nlohmann::json::value_t::boolean> { using type = nlohmann::json::boolean_t; };
+template <> struct json_enum_to_type<nlohmann::json::value_t::number_integer> { using type = nlohmann::json::number_integer_t; };
+template <> struct json_enum_to_type<nlohmann::json::value_t::number_unsigned> { using type = nlohmann::json::number_unsigned_t; };
+template <> struct json_enum_to_type<nlohmann::json::value_t::number_float> { using type = nlohmann::json::number_float_t; };
+template <> struct json_enum_to_type<nlohmann::json::value_t::binary> { using type = nlohmann::json::binary_t; };
+
+template <nlohmann::json::value_t T>
+using json_enum_to_type_t = typename json_enum_to_type<T>::type;
+
+template <typename T> constexpr nlohmann::json::value_t json_type_to_enum_v = nlohmann::json::value_t::null;
+template <> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::object_t> = nlohmann::json::value_t::object;
+template <> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::array_t> = nlohmann::json::value_t::array;
+template <> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::string_t> = nlohmann::json::value_t::string;
+template <> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::boolean_t> = nlohmann::json::value_t::boolean;
+template <> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::number_integer_t> = nlohmann::json::value_t::number_integer;
+template <> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::number_unsigned_t> = nlohmann::json::value_t::number_unsigned;
+template <> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::number_float_t> = nlohmann::json::value_t::number_float;
+template <> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::binary_t> = nlohmann::json::value_t::binary;
+
+template <typename T, nlohmann::json::value_t V>
+bool json_is_same_type_enum_v = std::is_same_v<T, json_enum_to_type_t<V>>;
 
 template<typename T, int R, int C>
 using MapType = Eigen::Map<
@@ -75,10 +91,10 @@ void check_array(const nlohmann::json &json, int rows, int cols) {
     throw std::runtime_error("input json object must be all numbers or all booleans array");
   }
 
-  if (json_type_to_enum<T> != json[0].type()) {
+  if (json_type_to_enum_v<T> != json[0].type()) {
     throw std::runtime_error(
         std::string("Map to wrong type: ")
-            + json_type_names[static_cast<int>(json_type_to_enum<T>)]
+            + json_type_names[static_cast<int>(json_type_to_enum_v<T>)]
             + " != "
             + json_type_names[static_cast<int>(json[0].type())]);
   }
