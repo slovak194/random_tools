@@ -281,6 +281,11 @@ class Server {
     return GetConst(key);
   }
 
+  template <typename T>
+  const T get(const std::string& key){
+    return GetConst(key).get<T>();
+  }
+
  private:
 
   std::shared_ptr<nlohmann::json> m_storage;
