@@ -30,7 +30,7 @@ namespace asio = boost::asio;
 
 namespace remote_config {
 
-static constexpr const char * json_type_names[] = {
+static constexpr const char *json_type_names[] = {
     "null",             ///< null value
     "object",           ///< object (unordered set of name/value pairs)
     "array",            ///< array (ordered collection of values)
@@ -43,30 +43,39 @@ static constexpr const char * json_type_names[] = {
     "discarded"         ///< discarded by the parser callback function
 };
 
-template <nlohmann::json::value_t T> struct json_enum_to_type { using type = nullptr_t; };
-template <> struct json_enum_to_type<nlohmann::json::value_t::object> { using type = nlohmann::json::object_t; };
-template <> struct json_enum_to_type<nlohmann::json::value_t::array> { using type = nlohmann::json::array_t; };
-template <> struct json_enum_to_type<nlohmann::json::value_t::string> { using type = nlohmann::json::string_t; };
-template <> struct json_enum_to_type<nlohmann::json::value_t::boolean> { using type = nlohmann::json::boolean_t; };
-template <> struct json_enum_to_type<nlohmann::json::value_t::number_integer> { using type = nlohmann::json::number_integer_t; };
-template <> struct json_enum_to_type<nlohmann::json::value_t::number_unsigned> { using type = nlohmann::json::number_unsigned_t; };
-template <> struct json_enum_to_type<nlohmann::json::value_t::number_float> { using type = nlohmann::json::number_float_t; };
-template <> struct json_enum_to_type<nlohmann::json::value_t::binary> { using type = nlohmann::json::binary_t; };
+template<nlohmann::json::value_t T>
+struct json_enum_to_type { using type = nullptr_t; };
+template<>
+struct json_enum_to_type<nlohmann::json::value_t::object> { using type = nlohmann::json::object_t; };
+template<>
+struct json_enum_to_type<nlohmann::json::value_t::array> { using type = nlohmann::json::array_t; };
+template<>
+struct json_enum_to_type<nlohmann::json::value_t::string> { using type = nlohmann::json::string_t; };
+template<>
+struct json_enum_to_type<nlohmann::json::value_t::boolean> { using type = nlohmann::json::boolean_t; };
+template<>
+struct json_enum_to_type<nlohmann::json::value_t::number_integer> { using type = nlohmann::json::number_integer_t; };
+template<>
+struct json_enum_to_type<nlohmann::json::value_t::number_unsigned> { using type = nlohmann::json::number_unsigned_t; };
+template<>
+struct json_enum_to_type<nlohmann::json::value_t::number_float> { using type = nlohmann::json::number_float_t; };
+template<>
+struct json_enum_to_type<nlohmann::json::value_t::binary> { using type = nlohmann::json::binary_t; };
 
-template <nlohmann::json::value_t T>
+template<nlohmann::json::value_t T>
 using json_enum_to_type_t = typename json_enum_to_type<T>::type;
 
-template <typename T> constexpr nlohmann::json::value_t json_type_to_enum_v = nlohmann::json::value_t::null;
-template <> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::object_t> = nlohmann::json::value_t::object;
-template <> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::array_t> = nlohmann::json::value_t::array;
-template <> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::string_t> = nlohmann::json::value_t::string;
-template <> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::boolean_t> = nlohmann::json::value_t::boolean;
-template <> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::number_integer_t> = nlohmann::json::value_t::number_integer;
-template <> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::number_unsigned_t> = nlohmann::json::value_t::number_unsigned;
-template <> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::number_float_t> = nlohmann::json::value_t::number_float;
-template <> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::binary_t> = nlohmann::json::value_t::binary;
+template<typename T> constexpr nlohmann::json::value_t json_type_to_enum_v = nlohmann::json::value_t::null;
+template<> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::object_t> = nlohmann::json::value_t::object;
+template<> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::array_t> = nlohmann::json::value_t::array;
+template<> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::string_t> = nlohmann::json::value_t::string;
+template<> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::boolean_t> = nlohmann::json::value_t::boolean;
+template<> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::number_integer_t> = nlohmann::json::value_t::number_integer;
+template<> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::number_unsigned_t> = nlohmann::json::value_t::number_unsigned;
+template<> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::number_float_t> = nlohmann::json::value_t::number_float;
+template<> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::binary_t> = nlohmann::json::value_t::binary;
 
-template <typename T, nlohmann::json::value_t V>
+template<typename T, nlohmann::json::value_t V>
 bool json_is_same_type_enum_v = std::is_same_v<T, json_enum_to_type_t<V>>;
 
 template<typename T, int R, int C>
@@ -100,8 +109,7 @@ void check_array(const nlohmann::json &json, int rows, int cols) {
 
 }
 
-
-template<typename T, int rows=1, int cols=Eigen::Dynamic, typename J>
+template<typename T, int rows = 1, int cols = Eigen::Dynamic, typename J>
 auto MapMatrixXT(J &json) {
   check_array<T>(json, rows, cols);
 
@@ -109,7 +117,7 @@ auto MapMatrixXT(J &json) {
     if constexpr (cols == Eigen::Dynamic) {
       return ConstMapType<T, rows, cols>(json[0].template get_ptr<const T *>(), json.size());
     } else {
-      if ((rows*cols) != json.size()) {
+      if ((rows * cols) != json.size()) {
         throw std::runtime_error("rows*cols != vector.size()");
       }
       return ConstMapType<T, rows, cols>(json[0].template get_ptr<const T *>());
@@ -118,7 +126,7 @@ auto MapMatrixXT(J &json) {
     if constexpr (cols == Eigen::Dynamic) {
       return MapType<T, rows, cols>(json[0].template get_ptr<T *>(), json.size());
     } else {
-      if ((rows*cols) != json.size()) {
+      if ((rows * cols) != json.size()) {
         throw std::runtime_error("rows*cols != vector.size()");
       }
       return MapType<T, rows, cols>(json[0].template get_ptr<T *>());
@@ -167,7 +175,7 @@ inline void check_numerical_homogenous_arrays(const nlohmann::json &j) {
   }
 }
 
-template <typename I, typename F>
+template<typename I, typename F>
 inline void fix_arrays(nlohmann::json &j) {
 
   static_assert(std::is_integral_v<I>, "I must be integral type");
@@ -175,10 +183,10 @@ inline void fix_arrays(nlohmann::json &j) {
 
   if (j.is_array() && std::all_of(j.begin(), j.end(), [](const auto x) { return x.is_number(); })) {
 
-    if (std::all_of(j.begin(), j.end(), [](const auto x) { return x.is_number_integer() || x.is_number_unsigned(); })){
-      for (auto & el : j) { el = static_cast<I>(el.get<I>()); }
+    if (std::all_of(j.begin(), j.end(), [](const auto x) { return x.is_number_integer() || x.is_number_unsigned(); })) {
+      for (auto &el : j) { el = static_cast<I>(el.get<I>()); }
     } else {
-      for (auto & el : j) { el = static_cast<F>(el.get<F>()); }
+      for (auto &el : j) { el = static_cast<F>(el.get<F>()); }
     }
 
   } else if (!j.is_primitive()) {
@@ -203,32 +211,26 @@ inline nlohmann::json apply_types(const nlohmann::json &j, const nlohmann::json 
   auto new_values_flat = j.flatten();
   auto old_types_flat = types.flatten();
 
-  for (auto [k, v] : old_types_flat.items()) {
-    switch (static_cast<nlohmann::json::value_t>(v.get<std::uint8_t>()))
-    {
-      case nlohmann::json::value_t::number_unsigned:
-      {
+  for (auto[k, v] : old_types_flat.items()) {
+    switch (static_cast<nlohmann::json::value_t>(v.get<std::uint8_t>())) {
+      case nlohmann::json::value_t::number_unsigned: {
         new_values_flat[k] = static_cast<nlohmann::json::number_unsigned_t>(new_values_flat[k]);
         break;
       }
-      case nlohmann::json::value_t::number_integer:
-      {
+      case nlohmann::json::value_t::number_integer: {
         new_values_flat[k] = static_cast<nlohmann::json::number_integer_t>(new_values_flat[k]);
         break;
       }
-      case nlohmann::json::value_t::number_float:
-      {
+      case nlohmann::json::value_t::number_float: {
         new_values_flat[k] = static_cast<nlohmann::json::number_float_t>(new_values_flat[k]);
         break;
       }
-      case nlohmann::json::value_t::boolean:
-      {
+      case nlohmann::json::value_t::boolean: {
         new_values_flat[k] = static_cast<nlohmann::json::boolean_t>(new_values_flat[k]);
         break;
       }
 
-      default:
-        break;
+      default:break;
     }
   }
 
@@ -236,8 +238,6 @@ inline nlohmann::json apply_types(const nlohmann::json &j, const nlohmann::json 
 
   return new_values;
 }
-
-
 
 class Server {
 
@@ -247,13 +247,27 @@ class Server {
   std::string m_tmp_json_file_path;
   bool m_verbose = true;
 
-  explicit Server(asio::io_service &ios, const std::string &config_path = std::string(PROJECT_SOURCE_DIR) + "/config/conf.yaml", const std::string &addr = "tcp://127.0.0.1:5555", bool verbose = true)
+ private:
+
+  std::shared_ptr<nlohmann::json> m_storage;
+  std::shared_ptr<nlohmann::json> m_types;
+#ifdef USE_ZMQ
+  std::vector<std::uint8_t> m_buf;
+  azmq::rep_socket m_responder;
+#endif
+
+ public:
+
+  explicit Server(
+      asio::io_service &ios,
+      const std::string &config_path = std::string(PROJECT_SOURCE_DIR) + "/config/conf.yaml",
+      const std::string &addr = "tcp://127.0.0.1:5555", bool verbose = true
+          )
       :
 #ifdef USE_ZMQ
       m_responder(ios),
 #endif
       m_verbose(verbose) {
-
 
     m_storage = std::make_shared<nlohmann::json>();
     m_types = std::make_shared<nlohmann::json>();
@@ -261,25 +275,23 @@ class Server {
     Load(config_path);
 
 #ifdef USE_ZMQ
-
     m_responder.bind(addr);
     m_buf.reserve(256);
-
     Receive();
 #endif
 
   }
 
-  nlohmann::json& operator[](const std::string &key) {
+  nlohmann::json &operator[](const std::string &key) {
     return Get(key);
   }
 
-  const nlohmann::json& operator()(const std::string &key) {
+  const nlohmann::json &operator()(const std::string &key) {
     return GetConst(key);
   }
 
-  template <typename T>
-  T get(const std::string& key){
+  template<typename T>
+  T get(const std::string &key) {
     return GetConst(key).get<T>();
   }
 
@@ -306,7 +318,7 @@ class Server {
         + this->m_config_path + std::string(" ")
         + this->m_tmp_json_file_path;
 
-    if (this->m_verbose) {std::cout << std::endl << command << std::endl;}
+    if (this->m_verbose) { std::cout << std::endl << command << std::endl; }
 
     auto res = system(command.c_str());
 
@@ -323,22 +335,11 @@ class Server {
 
     this->Set(tmp);
 
-    if (this->m_verbose) {std::cout << pprint(Get("")).dump(1) << std::endl;}
+    if (this->m_verbose) { std::cout << pprint(Get("")).dump(1) << std::endl; }
 
   }
 
-
  private:
-
-  std::shared_ptr<nlohmann::json> m_storage;
-  std::shared_ptr<nlohmann::json> m_types;
-
-#ifdef USE_ZMQ
-  azmq::rep_socket m_responder;
-#endif
-
-  std::vector<std::uint8_t> m_buf;
-
 
 #ifdef USE_ZMQ
   void Receive() {
@@ -361,7 +362,7 @@ class Server {
 
       try {
         nlohmann::json req = nlohmann::json::from_msgpack(this->m_buf);
-        if (this->m_verbose) {std::cout << req.dump() << std::endl;}
+        if (this->m_verbose) { std::cout << req.dump() << std::endl; }
 
         if (req["cmd"].get<std::string>() == "get") {
           repl = this->Get(req["key"].get<std::string>());
@@ -386,15 +387,15 @@ class Server {
 
 #endif // USE_ZMQ
 
-  nlohmann::json& Get(const std::string &key) {
+  nlohmann::json &Get(const std::string &key) {
     return (*this->m_storage).at(nlohmann::json::json_pointer(key));
   }
 
-  const nlohmann::json& GetConst(const std::string &key) {
+  const nlohmann::json &GetConst(const std::string &key) {
     return (*this->m_storage).at(nlohmann::json::json_pointer(key));
   }
 
-  const nlohmann::json& GetTypes(const std::string &key) {
+  const nlohmann::json &GetTypes(const std::string &key) {
     return (*this->m_types).at(nlohmann::json::json_pointer(key));
   }
 
@@ -425,9 +426,9 @@ class Server {
         } else {
           throw std::runtime_error(
               std::string("Cannot cast new types to original types")
-              + "old: " + get_type_names(old_types).dump(1)
-              + ", new: " + get_type_names(new_types).dump(1)
-              );
+                  + "old: " + get_type_names(old_types).dump(1)
+                  + ", new: " + get_type_names(new_types).dump(1)
+          );
         }
       }
     }
