@@ -6,11 +6,11 @@ import msgpack as msp
 
 class ConfigClient:
     class __ConfigClient:
-        def __init__(self, context=None, url="tcp://127.0.0.1:5555"):
-            self.url = url
+        def __init__(self, address="tcp://127.0.0.1:5555", context=None):
+            self.address = address
             self.context = context or zmq.Context.instance()
             self.socket = self.context.socket(zmq.REQ)
-            self.socket.connect(self.url)
+            self.socket.connect(self.address)
 
         @staticmethod
         def relax(key):
@@ -79,7 +79,13 @@ class ConfigClient:
 # %%
 if __name__ == "__main__":
 
-    # Usage: ipython -m remote_config.client -i
+    # Usage: ipython -i -m remote_config.client "tcp://192.168.43.217:5555"
 
-    c = ConfigClient()
+    import sys
 
+    if len(sys.argv) > 1:
+        address = sys.argv[1]
+    else:
+        address = "tcp://127.0.0.1:5555"
+
+    c = ConfigClient(address)

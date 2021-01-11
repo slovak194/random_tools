@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
 
   boost::asio::io_service ios;
 
-  remote_config::Server conf(ios);
+  remote_config::Server conf(ios, std::string(PROJECT_SOURCE_DIR) + "/config/conf.yaml", "tcp://*:5555");
 
   boost::asio::steady_timer timer(ios);
 
