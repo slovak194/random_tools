@@ -1,14 +1,20 @@
+import sys
+import os
+import platform
 import unittest
 import subprocess as sp
 from remote_config import ConfigClient
 
-server_exe_file_path = "/home/slovak/remote-config/cmake-build-debug/test/test_server"
 
-
-class TestMoteusProtocolPython(unittest.TestCase):
+class TestRemoteConfigInterface(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        if platform.architecture()[0] == "64bit":
+            server_exe_file_path = "/home/slovak/remote-config/cmake-build-debug/test/test_server"
+        else:
+            server_exe_file_path = "/home/pi/remote-config/build/test/test_server"
+
         cls.server = sp.Popen([server_exe_file_path])
         cls.c = ConfigClient()
 
@@ -57,5 +63,14 @@ class TestMoteusProtocolPython(unittest.TestCase):
         self.assertEqual(self.c.set("test/vector/data", [0, 0]), {'error': '[json.exception.type_error.302] type must be number, but is null'})
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+
+    # if len(sys.argv) == 1:
+    #     server_exe_file_path = "/home/slovak/remote-config/cmake-build-debug/test/test_server"
+    # else:
+    #     server_exe_file_path = sys.argv[1]
+
+    # suite = unittest.TestLoader().loadTestsFromTestCase(TestRemoteConfigInterface)
+    # unittest.TextTestRunner().run(suite)
+
     unittest.main()
