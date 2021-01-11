@@ -20,7 +20,6 @@
 #endif // USE_ZMQ
 
 #include <boost/asio.hpp>
-#include <boost/asio/signal_set.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -253,15 +252,13 @@ class Server {
 #ifdef USE_ZMQ
       m_responder(ios),
 #endif
-      m_signals(ios, SIGUSR1), m_verbose(verbose) {
+      m_verbose(verbose) {
 
 
     m_storage = std::make_shared<nlohmann::json>();
     m_types = std::make_shared<nlohmann::json>();
 
     Load(config_path);
-
-    SetSignalHandler();
 
 #ifdef USE_ZMQ
 
@@ -282,21 +279,9 @@ class Server {
   }
 
   template <typename T>
-  const T get(const std::string& key){
+  T get(const std::string& key){
     return GetConst(key).get<T>();
   }
-
- private:
-
-  std::shared_ptr<nlohmann::json> m_storage;
-  std::shared_ptr<nlohmann::json> m_types;
-
-#ifdef USE_ZMQ
-  azmq::rep_socket m_responder;
-#endif
-
-  std::vector<std::uint8_t> m_buf;
-  boost::asio::signal_set m_signals;
 
   void Load(const std::string &config_path = "") {
 
@@ -341,6 +326,19 @@ class Server {
     if (this->m_verbose) {std::cout << pprint(Get("")).dump(1) << std::endl;}
 
   }
+
+
+ private:
+
+  std::shared_ptr<nlohmann::json> m_storage;
+  std::shared_ptr<nlohmann::json> m_types;
+
+#ifdef USE_ZMQ
+  azmq::rep_socket m_responder;
+#endif
+
+  std::vector<std::uint8_t> m_buf;
+
 
 #ifdef USE_ZMQ
   void Receive() {
@@ -387,17 +385,6 @@ class Server {
   }
 
 #endif // USE_ZMQ
-
-  void SetSignalHandler() {
-
-    // kill -s USR1 $(pidof test_config_asio_zmq)
-
-    m_signals.async_wait([this](const boost::system::error_code &error, int signal_number) {
-      if (this->m_verbose) {std::cout << "Reloading config ..." << signal_number << std::endl;}
-      this->Load();
-      this->SetSignalHandler();
-    });
-  }
 
   nlohmann::json& Get(const std::string &key) {
     return (*this->m_storage).at(nlohmann::json::json_pointer(key));
