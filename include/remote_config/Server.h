@@ -97,7 +97,7 @@ using ConstMapType = Eigen::Map<
 >;
 
 
-nlohmann::json yaml_to_json(YAML::Node node) {
+inline nlohmann::json yaml_to_json(const YAML::Node &node) {
   nlohmann::json json;
 
   if (node.IsScalar()) {
@@ -334,12 +334,12 @@ class Server {
 
     nlohmann::json tmp;
 
-    if(this->m_config_path.substr(this->m_config_path.find_last_of(".") + 1) == "json") {
+    if(this->m_config_path.substr(this->m_config_path.find_last_of('.') + 1) == "json") {
       std::ifstream i(this->m_config_path);
       tmp = nlohmann::json::parse(i);
-    } else if(this->m_config_path.substr(this->m_config_path.find_last_of(".") + 1) == "yaml") {
+    } else if(this->m_config_path.substr(this->m_config_path.find_last_of('.') + 1) == "yaml") {
       tmp = yaml_to_json(YAML::LoadFile(this->m_config_path));
-    } else if(this->m_config_path.substr(this->m_config_path.find_last_of(".") + 1) == "yml") {
+    } else if(this->m_config_path.substr(this->m_config_path.find_last_of('.') + 1) == "yml") {
       tmp = yaml_to_json(YAML::LoadFile(this->m_config_path));
     } else {
       throw std::runtime_error("Wrong file format");
