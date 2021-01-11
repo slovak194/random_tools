@@ -11,4 +11,5 @@ target_link_libraries(test_server PUBLIC
         zmq
         )
 target_compile_definitions(test_server PUBLIC USE_ZMQ)
+target_compile_definitions(test_server PUBLIC PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 target_link_libraries(test_server PUBLIC zmq)

@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
 
   boost::asio::io_service ios;
 
-  remote_config::Server conf(ios, "/home/slovak/remote-config/config/conf_test.yaml");
+  remote_config::Server conf(ios);
 
   boost::asio::steady_timer timer(ios);
 
