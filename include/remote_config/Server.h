@@ -25,6 +25,7 @@
 #include <Eigen/Dense>
 
 #include <nlohmann/json.hpp>
+#include "yaml-cpp/yaml.h"
 
 namespace asio = boost::asio;
 
@@ -75,8 +76,10 @@ template<> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json:
 template<> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::number_float_t> = nlohmann::json::value_t::number_float;
 template<> constexpr nlohmann::json::value_t json_type_to_enum_v<nlohmann::json::binary_t> = nlohmann::json::value_t::binary;
 
+
 template<typename T, nlohmann::json::value_t V>
 bool json_is_same_type_enum_v = std::is_same_v<T, json_enum_to_type_t<V>>;
+
 
 template<typename T, int R, int C>
 using MapType = Eigen::Map<
@@ -85,12 +88,41 @@ using MapType = Eigen::Map<
     Eigen::InnerStride<sizeof(nlohmann::json) / sizeof(T)>
 >;
 
+
 template<typename T, int R, int C>
 using ConstMapType = Eigen::Map<
     const Eigen::Matrix<T, R, C, Eigen::RowMajor>,
     Eigen::Unaligned,
     Eigen::InnerStride<sizeof(nlohmann::json) / sizeof(T)>
 >;
+
+
+nlohmann::json yaml_to_json(YAML::Node node) {
+  nlohmann::json json;
+
+  if (node.IsScalar()) {
+    try {
+      return nlohmann::json::parse(node.as<std::string>());
+    } catch (const nlohmann::detail::parse_error &e) {}
+
+    try {
+      return nlohmann::json::parse("[\"" + node.as<std::string>() + "\"]")[0];
+    } catch (const nlohmann::detail::parse_error &e) {}
+
+    return node.as<std::string>();
+
+  } else if (node.IsSequence()) {
+    for (const auto& v : node) {
+      json.push_back(yaml_to_json(v));
+    }
+  } else if (node.IsMap()) {
+    for (const auto& v : node) {
+      json[v.first.as<std::string>()] = yaml_to_json(v.second);
+    }
+  }
+  return json;
+}
+
 
 template<typename T>
 void check_array(const nlohmann::json &json, int rows, int cols) {
@@ -244,7 +276,6 @@ class Server {
  public:
 
   std::string m_config_path;
-  std::string m_tmp_json_file_path;
   bool m_verbose = true;
 
  private:
@@ -299,36 +330,21 @@ class Server {
 
     if (!config_path.empty()) {
       this->m_config_path = config_path;
-      this->m_tmp_json_file_path = config_path + ".json";
     }
 
-    // TODO, OLSLO, get rid of python conversion.
-//    std::string command = std::string("python3 -c '") +
-//        std::string("config_file_yaml_path = \"") + this->m_config_path + std::string("\"\n") +
-//        "import yaml\n"
-//        "import json\n"
-//        "with open(config_file_yaml_path, \"r\") as yaml_in, open(\"" + this->m_tmp_json_file_path +
-//        "\", \"w\") as json_out:\n"
-//        "    yaml_object = yaml.safe_load(yaml_in)\n"
-//        "    json.dump(yaml_object, json_out, indent=\" \")\n"
-//        "'";
+    nlohmann::json tmp;
 
-    std::string command = std::string(
-        "python3 -m remote_config.yaml2json ")
-        + this->m_config_path + std::string(" ")
-        + this->m_tmp_json_file_path;
-
-    if (this->m_verbose) { std::cout << std::endl << command << std::endl; }
-
-    auto res = system(command.c_str());
-
-    if (res) {
-      throw std::runtime_error("Conversion yaml to json has failed with exit code: " + std::to_string(res));
+    if(this->m_config_path.substr(this->m_config_path.find_last_of(".") + 1) == "json") {
+      std::ifstream i(this->m_config_path);
+      tmp = nlohmann::json::parse(i);
+    } else if(this->m_config_path.substr(this->m_config_path.find_last_of(".") + 1) == "yaml") {
+      tmp = yaml_to_json(YAML::LoadFile(this->m_config_path));
+    } else if(this->m_config_path.substr(this->m_config_path.find_last_of(".") + 1) == "yml") {
+      tmp = yaml_to_json(YAML::LoadFile(this->m_config_path));
+    } else {
+      throw std::runtime_error("Wrong file format");
     }
 
-    std::ifstream i(this->m_tmp_json_file_path);
-
-    auto tmp = nlohmann::json::parse(i);
     fix_unsigned(tmp);
     fix_arrays<std::int64_t, double>(tmp);
     check_numerical_homogenous_arrays(tmp);
