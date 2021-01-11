@@ -127,9 +127,7 @@ auto MapMatrixXT(J &json) {
   }
 }
 
-
-
-nlohmann::json get_types(const nlohmann::json &j) {
+inline nlohmann::json get_types(const nlohmann::json &j) {
   nlohmann::json types;
   auto jf = j.flatten();
   for (auto&[k, v] : jf.items()) {
@@ -138,7 +136,7 @@ nlohmann::json get_types(const nlohmann::json &j) {
   return types.unflatten();
 }
 
-nlohmann::json get_type_names(const nlohmann::json &j) {
+inline nlohmann::json get_type_names(const nlohmann::json &j) {
   nlohmann::json types;
   auto jf = j.flatten();
   for (auto&[k, v] : jf.items()) {
@@ -147,7 +145,7 @@ nlohmann::json get_type_names(const nlohmann::json &j) {
   return types.unflatten();
 }
 
-nlohmann::json pprint(const nlohmann::json &j) {
+inline nlohmann::json pprint(const nlohmann::json &j) {
   nlohmann::json types;
   auto jf = j.flatten();
   for (auto&[k, v] : jf.items()) {
@@ -157,7 +155,7 @@ nlohmann::json pprint(const nlohmann::json &j) {
   return types.unflatten();
 }
 
-void check_numerical_homogenous_arrays(const nlohmann::json &j) {
+inline void check_numerical_homogenous_arrays(const nlohmann::json &j) {
 
   if (j.is_array() && std::all_of(j.begin(), j.end(), [](const auto x) { return x.is_number() || x.is_boolean(); })) {
     if (std::any_of(j.begin(), j.end(), [zero_type = j[0].type()](const auto x) { return x.type() != zero_type; })) {
@@ -171,7 +169,7 @@ void check_numerical_homogenous_arrays(const nlohmann::json &j) {
 }
 
 template <typename I, typename F>
-void fix_arrays(nlohmann::json &j) {
+inline void fix_arrays(nlohmann::json &j) {
 
   static_assert(std::is_integral_v<I>, "I must be integral type");
   static_assert(std::is_floating_point_v<F>, "F must be floating point type");
@@ -191,8 +189,7 @@ void fix_arrays(nlohmann::json &j) {
   }
 }
 
-
-void fix_unsigned(nlohmann::json &j) {
+inline void fix_unsigned(nlohmann::json &j) {
   if (j.is_primitive() && j.is_number_unsigned()) {
     j = static_cast<nlohmann::json::number_integer_t>(j.get<nlohmann::json::number_unsigned_t>());
   } else if (!j.is_primitive()) {
@@ -202,8 +199,7 @@ void fix_unsigned(nlohmann::json &j) {
   }
 }
 
-
-nlohmann::json apply_types(const nlohmann::json &j, const nlohmann::json &types) {
+inline nlohmann::json apply_types(const nlohmann::json &j, const nlohmann::json &types) {
   // try cas to old types
   auto new_values_flat = j.flatten();
   auto old_types_flat = types.flatten();
@@ -252,7 +248,7 @@ class Server {
   std::string m_tmp_json_file_path;
   bool m_verbose = true;
 
-  explicit Server(asio::io_service &ios, const std::string &config_path, const std::string &addr = "tcp://127.0.0.1:5555", bool verbose = true)
+  explicit Server(asio::io_service &ios, const std::string &config_path = std::string(PROJECT_SOURCE_DIR) + "/config/conf.yaml", const std::string &addr = "tcp://127.0.0.1:5555", bool verbose = true)
       :
 #ifdef USE_ZMQ
       m_responder(ios),
