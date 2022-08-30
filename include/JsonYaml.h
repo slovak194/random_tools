@@ -1,10 +1,15 @@
-#include <iostream>
+//
+// Created by slovak on 8/30/22.
+//
 
+#pragma once
+
+#include <nlohmann/json.hpp>
 #include "yaml-cpp/yaml.h"
-#include "nlohmann/json.hpp"
 
+namespace json_yaml {
 
-nlohmann::json yaml_to_json(YAML::Node node) {
+inline nlohmann::json yaml_to_json(const YAML::Node &node) {
   nlohmann::json json;
 
   if (node.IsScalar()) {
@@ -19,25 +24,15 @@ nlohmann::json yaml_to_json(YAML::Node node) {
     return node.as<std::string>();
 
   } else if (node.IsSequence()) {
-    for (const auto& v : node) {
+    for (const auto &v: node) {
       json.push_back(yaml_to_json(v));
     }
   } else if (node.IsMap()) {
-    for (const auto& v : node) {
+    for (const auto &v: node) {
       json[v.first.as<std::string>()] = yaml_to_json(v.second);
     }
   }
   return json;
 }
 
-
-int main(int argc, char **argv) {
-
-  YAML::Node config = YAML::LoadFile("/home/slovak/remote-config/config/conf.yaml");
-
-  nlohmann::json json = yaml_to_json(config);
-
-  std::cout << json.dump(1) << std::endl;
-
-  return 0;
 }

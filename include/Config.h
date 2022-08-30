@@ -7,43 +7,36 @@
 
 #include <iostream>
 #include <array>
-#include <thread>
 #include <vector>
 #include <fstream>
 #include <memory>
-
-#include <boost/asio.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
 #include <nlohmann/json.hpp>
+#include <spdlog/spdlog.h>
 
-#include "JsonEigenUtils.h"
+#include "JsonEigen.h"
+#ifdef YAML_SUPPORT
+#include "JsonYaml.h"
+#endif
 
-namespace asio = boost::asio;
+using namespace json_eigen;
 
-using namespace json_eigen_utils;
+namespace remote {
 
-namespace remote_config {
-
-class Server {
-
+class Config {
  public:
 
   std::string m_config_path;
-  bool m_verbose = true;
 
  private:
-
   std::shared_ptr<nlohmann::json> m_storage;
   std::shared_ptr<nlohmann::json> m_types;
 
  public:
-
-  explicit Server(const std::string &config_path = std::string(PROJECT_SOURCE_DIR) + "/config/conf.yaml", bool verbose = true)
-      :
-      m_verbose(verbose) {
+  explicit Config(const std::string &config_path = std::string(PROJECT_SOURCE_DIR) + "/config/conf.yaml") {
 
     m_storage = std::make_shared<nlohmann::json>();
     m_types = std::make_shared<nlohmann::json>();
@@ -73,14 +66,18 @@ class Server {
 
     nlohmann::json tmp;
 
-    if(this->m_config_path.substr(this->m_config_path.find_last_of('.') + 1) == "json") {
+    if (this->m_config_path.substr(this->m_config_path.find_last_of('.') + 1) == "json") {
       std::ifstream i(this->m_config_path);
       tmp = nlohmann::json::parse(i);
-    } else if(this->m_config_path.substr(this->m_config_path.find_last_of('.') + 1) == "yaml") {
-      tmp = yaml_to_json(YAML::LoadFile(this->m_config_path));
-    } else if(this->m_config_path.substr(this->m_config_path.find_last_of('.') + 1) == "yml") {
-      tmp = yaml_to_json(YAML::LoadFile(this->m_config_path));
-    } else {
+    }
+#ifdef YAML_SUPPORT
+      else if (this->m_config_path.substr(this->m_config_path.find_last_of('.') + 1) == "yaml") {
+        tmp = json_yaml::yaml_to_json(YAML::LoadFile(this->m_config_path));
+      } else if (this->m_config_path.substr(this->m_config_path.find_last_of('.') + 1) == "yml") {
+        tmp = json_yaml::yaml_to_json(YAML::LoadFile(this->m_config_path));
+      }
+#endif
+    else {
       throw std::runtime_error("Wrong file format");
     }
 
@@ -90,7 +87,7 @@ class Server {
 
     this->Set(tmp);
 
-    if (this->m_verbose) { std::cout << pprint(Get("")).dump(1) << std::endl; }
+    spdlog::debug(pprint(Get("")).dump(1));
 
   }
 

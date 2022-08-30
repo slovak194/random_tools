@@ -1,9 +1,9 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='remote_config',
+    name='remote_tools',
     version='0.1.0',
-    description='Remote config client and server',
+    description='Config storage, simple rpc, etc',
     long_description="",
     author='Oleksandr Slovak',
     author_email='slovak194@gmail.com',

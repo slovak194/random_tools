@@ -1,9 +1,8 @@
-import sys
-import os
+#!/usr/bin/env python3
 import platform
 import unittest
 import subprocess as sp
-from remote_config import Client
+from remote_tools import Client
 
 
 class TestRemoteConfigInterface(unittest.TestCase):
@@ -64,13 +63,4 @@ class TestRemoteConfigInterface(unittest.TestCase):
 
 
 if __name__ == "__main__":
-
-    # if len(sys.argv) == 1:
-    #     server_exe_file_path = "/home/slovak/remote-config/cmake-build-debug/test/test_server"
-    # else:
-    #     server_exe_file_path = sys.argv[1]
-
-    # suite = unittest.TestLoader().loadTestsFromTestCase(TestRemoteConfigInterface)
-    # unittest.TextTestRunner().run(suite)
-
     unittest.main()

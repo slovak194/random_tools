@@ -1,7 +1,7 @@
 
 #include <chrono>
 
-#include <Rpc.h>
+#include "../include/Rpc.h"
 
 using namespace std::chrono_literals;
 using namespace nlohmann;
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 
   MyClass my_class;
 
-  HomeMadeRpc rpc("tcp://*:5555", ios);
+  Server rpc("tcp://*:5555", ios);
 
   rpc.AddMethod("get", [&my_class](json a) { return my_class.get(a); });
   rpc.AddMethod("set", [&my_class](json a) { return my_class.set(a); });

@@ -1,17 +1,19 @@
 
 #include <chrono>
 
-#include <remote_config/Server.h>
-#include <remote_config/Rpc.h>
+#include <boost/asio.hpp>
+
+#include "Config.h"
+#include "Rpc.h"
 
 using namespace std::chrono_literals;
 
 
-void on_timer(boost::asio::steady_timer &timer, remote_config::Server &conf) {
+void on_timer(boost::asio::steady_timer &timer, remote::Config &conf) {
   timer.expires_after(std::chrono::seconds(1));
 
-  auto m_const = json_eigen_utils::MapMatrixXT<double, 3, 3>(conf("/test/matrix/data"));
-  auto m_mutable = json_eigen_utils::MapMatrixXT<std::int64_t>(conf["/test/vector/data"]);
+  auto m_const = json_eigen::MapMatrixXT<double, 3, 3>(conf("/test/matrix/data"));
+  auto m_mutable = json_eigen::MapMatrixXT<std::int64_t>(conf["/test/vector/data"]);
 
   std::cout << m_const << std::endl;
 
@@ -30,9 +32,9 @@ int main(int argc, char **argv) {
 
   boost::asio::io_service ios;
 
-  remote_config::Server conf(std::string(PROJECT_SOURCE_DIR) + "/config/conf.yaml");
+  remote::Config conf(std::string(PROJECT_SOURCE_DIR) + "/config/conf.yaml");
 
-  HomeMadeRpc rpc("tcp://*:5555", ios);
+  remote::rpc::Server rpc("tcp://*:5555", ios);
 
   rpc.AddMethod("get", [&conf](json j) { return conf.Get(j["key"].get<std::string>()); });
   rpc.AddMethod("set", [&conf](json j) {

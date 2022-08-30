@@ -6,7 +6,6 @@
 
 #include <unordered_map>
 #include <functional>
-#include <memory>
 #include <thread>
 #include <string>
 
@@ -17,12 +16,20 @@
 using namespace boost;
 using namespace nlohmann;
 
-class HomeMadeRpc {
- public:
-  explicit HomeMadeRpc(const std::string &addr, asio::io_service &ios)
-      : m_responder(ios) {
+namespace remote {
 
-    m_responder.bind(addr);
+namespace rpc {
+
+class Client {
+
+};
+
+class Server {
+ public:
+  explicit Server(const std::string &addr, asio::io_service &ios)
+      : rep_socket(ios) {
+
+    rep_socket.bind(addr);
     m_buf.reserve(256);
     Receive();
   }
@@ -33,7 +40,7 @@ class HomeMadeRpc {
 
     this->m_buf.resize(1024);
 
-    this->m_responder.async_receive(
+    this->rep_socket.async_receive(
         asio::buffer(this->m_buf),
         [this](auto ...vn) { this->OnReceive(vn...); });
   }
@@ -54,27 +61,14 @@ class HomeMadeRpc {
 
         spdlog::debug(req.dump());
 
-//        if (auto it = calls.find(req["cmd"].get<std::string>()); it != calls.end()) {
-//          auto res = it->second(req["value"]);
-//        }
-
         repl = calls.at(req["fun"].get<std::string>())(req["args"]);
 
-//        if (req["cmd"].get<std::string>() == "get") {
-//          repl = this->Get(req["key"].get<std::string>());
-//        } else if (req["cmd"].get<std::string>() == "set") {
-//          this->Set(req["key"].get<std::string>(), req["value"]);
-//          repl = this->Get(req["key"].get<std::string>());
-//        } else if (req["cmd"].get<std::string>() == "load") {
-//          this->Load(req["value"].get<std::string>());
-//          repl = this->Get("");
-//        }
       } catch (const std::exception &e) {
         repl["error"] = std::string(e.what());
       }
     }
 
-    this->m_responder.async_send(
+    this->rep_socket.async_send(
         azmq::message(asio::buffer(json::to_msgpack(repl))),
         [this](auto ...vn) {});
 
@@ -86,8 +80,12 @@ class HomeMadeRpc {
   }
 
   std::vector<std::uint8_t> m_buf;
-  azmq::rep_socket m_responder;
+  azmq::rep_socket rep_socket;
 
   std::unordered_map<std::string, std::function<json(json)>> calls;
 
 };
+
+}
+
+}

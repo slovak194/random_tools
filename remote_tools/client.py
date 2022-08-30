@@ -58,7 +58,7 @@ class Client:
 # %%
 if __name__ == "__main__":
 
-    # Usage: ipython -i -m remote_config.client "tcp://192.168.43.217:5555"
+    # Usage: ipython -i -m remote_tools.client "tcp://192.168.43.217:5555"
 
     import sys
 

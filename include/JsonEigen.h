@@ -7,12 +7,11 @@
 #include <type_traits>
 
 #include <nlohmann/json.hpp>
-#include "yaml-cpp/yaml.h"
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-namespace json_eigen_utils {
+namespace json_eigen {
 
 static constexpr const char *json_type_names[] = {
     "null",             ///< null value
@@ -76,32 +75,6 @@ using ConstMapType = Eigen::Map<
     Eigen::Unaligned,
     Eigen::InnerStride<sizeof(nlohmann::json) / sizeof(T)>
 >;
-
-inline nlohmann::json yaml_to_json(const YAML::Node &node) {
-  nlohmann::json json;
-
-  if (node.IsScalar()) {
-    try {
-      return nlohmann::json::parse(node.as<std::string>());
-    } catch (const nlohmann::detail::parse_error &e) {}
-
-    try {
-      return nlohmann::json::parse("[\"" + node.as<std::string>() + "\"]")[0];
-    } catch (const nlohmann::detail::parse_error &e) {}
-
-    return node.as<std::string>();
-
-  } else if (node.IsSequence()) {
-    for (const auto &v: node) {
-      json.push_back(yaml_to_json(v));
-    }
-  } else if (node.IsMap()) {
-    for (const auto &v: node) {
-      json[v.first.as<std::string>()] = yaml_to_json(v.second);
-    }
-  }
-  return json;
-}
 
 template<typename T>
 void check_array(const nlohmann::json &json, int rows, int cols) {
