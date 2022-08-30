@@ -10,4 +10,6 @@ find_package(Boost REQUIRED COMPONENTS system chrono regex)
 find_package(nlohmann_json REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
+include_directories(include/remote_config)
+
 add_subdirectory(test)

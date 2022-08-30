@@ -12,7 +12,7 @@ target_link_libraries(test_server PUBLIC
         nlohmann_json::nlohmann_json
         zmq
         )
-target_compile_definitions(test_server PUBLIC USE_ZMQ)
+#target_compile_definitions(test_server PUBLIC USE_ZMQ)
 target_compile_definitions(test_server PUBLIC PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 target_link_libraries(test_server PUBLIC zmq)
 
@@ -28,4 +28,13 @@ target_link_libraries(test_yaml PUBLIC
         pthread
         nlohmann_json::nlohmann_json
         zmq
+        )
+
+add_executable(test_rpc test_rpc.cpp)
+
+target_link_libraries(test_rpc PUBLIC
+        ${Boost_LIBRARIES}
+        nlohmann_json::nlohmann_json
+        zmq
+        pthread
         )
