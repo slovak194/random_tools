@@ -1,3 +1,3 @@
-from remote_config.client import ConfigClient
+from remote_config.client import Client
 
-__all__ = ["ConfigClient"]
+__all__ = ["Client"]

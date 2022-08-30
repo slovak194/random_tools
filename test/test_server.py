@@ -3,7 +3,7 @@ import os
 import platform
 import unittest
 import subprocess as sp
-from remote_config import ConfigClient
+from remote_config import Client
 
 
 class TestRemoteConfigInterface(unittest.TestCase):
@@ -16,7 +16,7 @@ class TestRemoteConfigInterface(unittest.TestCase):
             server_exe_file_path = "/home/pi/remote-config/build/test/test_server"
 
         cls.server = sp.Popen([server_exe_file_path])
-        cls.c = ConfigClient()
+        cls.c = Client()
 
     @classmethod
     def tearDownClass(cls):
