@@ -16,3 +16,4 @@ add_executable(test_config_server test_config_server.cpp)
 target_compile_definitions(test_config_server PUBLIC PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 
 add_executable(test_rpc_server test_rpc_server.cpp)
+add_executable(test_rpc_client test_rpc_client.cpp)

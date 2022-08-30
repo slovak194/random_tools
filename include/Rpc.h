@@ -27,7 +27,30 @@ class Client {
 
     req_socket.connect(addr);
     m_buf.reserve(256);
-//    Receive();
+  }
+
+  template <typename... Ts>
+  json Call(const std::string &fun, Ts const&... args) {
+    json req;
+    req["fun"] = fun;
+    req["args"] = {args...};
+    return Call(req);
+  }
+
+  json Call(const json &req) {
+
+    spdlog::debug("Sending {}", req.dump());
+    this->req_socket.send(azmq::message(asio::buffer(json::to_msgpack(req))));
+    this->m_buf.resize(1024);
+    auto bytes_received = this->req_socket.receive(asio::buffer(this->m_buf));
+
+    if (bytes_received) {
+      this->m_buf.resize(bytes_received);
+      spdlog::debug("Received bytes: {}", bytes_received);
+      return json::from_msgpack(this->m_buf);
+    } else {
+      return {};
+    }
   }
 
   std::vector<std::uint8_t> m_buf;
@@ -47,7 +70,7 @@ class Server {
 
   void Receive() {
 
-    spdlog::debug("Receive");
+    spdlog::debug("Schedule async receive");
 
     this->m_buf.resize(1024);
 
@@ -58,7 +81,7 @@ class Server {
 
   void OnReceive(const boost::system::error_code &error, size_t bytes_transferred) {
 
-    spdlog::debug("On Receive");
+    spdlog::debug("On Receive callback");
 
     json repl;
 
@@ -70,7 +93,7 @@ class Server {
       try {
         json req = json::from_msgpack(this->m_buf);
 
-        spdlog::debug(req.dump());
+        spdlog::debug("Received: {}", req.dump());
 
         repl = calls.at(req["fun"].get<std::string>())(req["args"]);
 
@@ -79,6 +102,7 @@ class Server {
       }
     }
 
+    spdlog::debug("sending reply {}", repl.dump());
     this->rep_socket.async_send(
         azmq::message(asio::buffer(json::to_msgpack(repl))),
         [this](auto ...vn) {});
