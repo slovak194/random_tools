@@ -10,9 +10,9 @@ class TestRemoteConfigInterface(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if platform.architecture()[0] == "64bit":
-            server_exe_file_path = "/home/slovak/remote-config/cmake-build-debug/test/test_server"
+            server_exe_file_path = "/home/slovak/remote-config/cmake-build-debug/test/test_config_server"
         else:
-            server_exe_file_path = "/home/pi/remote-config/build/test/test_server"
+            server_exe_file_path = "/home/pi/remote-config/build/test/test_config_server"
 
         cls.server = sp.Popen([server_exe_file_path])
         cls.c = Client()

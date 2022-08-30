@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 
   MyClass my_class;
 
-  Server rpc("tcp://*:5555", ios);
+  remote::rpc::Server rpc("tcp://*:5555", ios);
 
   rpc.AddMethod("get", [&my_class](json a) { return my_class.get(a); });
   rpc.AddMethod("set", [&my_class](json a) { return my_class.set(a); });

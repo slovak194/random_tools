@@ -21,6 +21,17 @@ namespace remote {
 namespace rpc {
 
 class Client {
+ public:
+  explicit Client(const std::string &addr, asio::io_service &ios)
+      : req_socket(ios) {
+
+    req_socket.connect(addr);
+    m_buf.reserve(256);
+//    Receive();
+  }
+
+  std::vector<std::uint8_t> m_buf;
+  azmq::req_socket req_socket;
 
 };
 
