@@ -33,11 +33,11 @@ class Client {
   json Call(const std::string &fun, Ts const&... args) {
     json req;
     req["fun"] = fun;
-    req["args"] = {args...};
-    return Call(req);
+    req["args"] = json::array({args...});
+    return CallReq(req);
   }
 
-  json Call(const json &req) {
+  json CallReq(const json &req) {
 
     spdlog::debug("Sending {}", req.dump());
     this->req_socket.send(azmq::message(asio::buffer(json::to_msgpack(req))));
@@ -94,8 +94,11 @@ class Server {
         json req = json::from_msgpack(this->m_buf);
 
         spdlog::debug("Received: {}", req.dump());
+        auto callable = calls.at(req["fun"].get<std::string>());
+        auto args = req["args"];
 
-        repl = calls.at(req["fun"].get<std::string>())(req["args"]);
+        spdlog::debug("Calling calable with args: {}", args.dump());
+        repl = callable(args);
 
       } catch (const std::exception &e) {
         repl["error"] = std::string(e.what());
