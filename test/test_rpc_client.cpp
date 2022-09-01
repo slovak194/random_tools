@@ -19,7 +19,6 @@ void SetSigHandler(boost::asio::signal_set &sigs, asio::io_service &ios) {
       spdlog::error(error.message());
     }
   });
-
 }
 
 int main(int argc, char **argv) {

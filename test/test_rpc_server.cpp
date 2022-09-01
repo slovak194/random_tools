@@ -20,10 +20,9 @@ int main(int argc, char **argv) {
 
   spdlog::set_level(spdlog::level::debug);
 
-  asio::io_service ios;
-
   MyClass my_class;
 
+  asio::io_service ios;
   remote::rpc::Server rpc("tcp://*:5555", ios);
 
   rpc.AddMethod("some", [&my_class](json a) { return my_class.some(a); });
