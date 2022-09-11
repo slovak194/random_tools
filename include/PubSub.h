@@ -9,12 +9,12 @@
 #include <thread>
 #include <string>
 
-#include <nlohmann/json.hpp>
+//#include <nlohmann/json.hpp>
 #include <azmq/socket.hpp>
 #include <spdlog/spdlog.h>
 
 using namespace boost;
-using namespace nlohmann;
+//using namespace nlohmann;
 
 namespace remote {
 
@@ -26,19 +26,21 @@ class Publisher {
       : pub_socket(ios) {
 
     pub_socket.bind(addr);
+
+    spdlog::debug(pub_socket.endpoint());
+
   }
 
-  void Pub(const json &req) {
-    spdlog::debug("Sending {}", req.dump());
-    this->pub_socket.send(azmq::message(asio::buffer(json::to_msgpack(req))));
+  void Pub(const std::vector<uint8_t> &req) {
+    this->pub_socket.send(azmq::message(asio::buffer(req)));
   }
 
-  void APub(const json &req) {
-    spdlog::debug("Sending {}", req.dump());
-//    this->pub_socket.send(azmq::message(asio::buffer(json::to_msgpack(req))));
+  void APub(const std::vector<uint8_t> &req) {
     this->pub_socket.async_send(
-        azmq::message(asio::buffer(json::to_msgpack(req))),
-        [](){}, ZMQ_DONTWAIT);
+        azmq::message(asio::buffer(req)),
+        [](const boost::system::error_code &error, size_t bytes_received){
+          spdlog::debug("Published bytes: {}", bytes_received);
+          }, ZMQ_DONTWAIT);
   }
 
   azmq::pub_socket pub_socket;
@@ -51,6 +53,10 @@ class Subscriber {
       : sub_socket(ios) {
 
     sub_socket.connect(addr);
+    sub_socket.set_option(azmq::socket::subscribe(""));
+
+    spdlog::debug(sub_socket.endpoint());
+
     m_buf.reserve(256);
     AsyncReceive();
   }
@@ -68,16 +74,15 @@ class Subscriber {
 
   void OnReceive(const boost::system::error_code &error, size_t bytes_received) {
 
-    spdlog::debug("On Receive callback");
+    spdlog::debug("Received bytes: {}", bytes_received);
 
     if (bytes_received) {
       this->m_buf.resize(bytes_received);
-      spdlog::debug("Received bytes: {}", bytes_received);
-      json res = json::from_msgpack(this->m_buf);
+//      json res = json::from_msgpack(this->m_buf);
+      spdlog::debug("Received: {}", this->m_buf[0]);
+//      spdlog::debug("Received: {}", res.dump());
     }
-    
     AsyncReceive();
-
   }
 
   std::vector<std::uint8_t> m_buf;
