@@ -81,6 +81,7 @@ class Subscriber {
       spdlog::trace("Received: {}", this->m_buf[0]);
 
       j = json::from_msgpack(this->m_buf);
+      spdlog::trace(j.dump());
 
       fun(j);
     }
