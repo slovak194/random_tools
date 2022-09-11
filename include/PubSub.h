@@ -49,8 +49,8 @@ class Publisher {
 
 class Subscriber {
  public:
-  explicit Subscriber(const std::string &addr, asio::io_service &ios)
-      : sub_socket(ios) {
+  explicit Subscriber(const std::string &addr, std::vector<std::uint8_t> out_buf, asio::io_service &ios)
+      : m_buf(out_buf), sub_socket(ios) {
 
     sub_socket.connect(addr);
     sub_socket.set_option(azmq::socket::subscribe(""));
@@ -83,7 +83,7 @@ class Subscriber {
     AsyncReceive();
   }
 
-  std::vector<std::uint8_t> m_buf;
+  std::vector<std::uint8_t> &m_buf;
   azmq::sub_socket sub_socket;
 
 };
