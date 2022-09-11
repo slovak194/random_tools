@@ -6,7 +6,7 @@
 #include <string>
 #include <opencv2/core.hpp>
 
-std::string type2str(int type) {
+inline std::string type2str(int type) {
   std::string r;
 
   uchar depth = type & CV_MAT_DEPTH_MASK;
