@@ -27,7 +27,7 @@ class Publisher {
 
     pub_socket.bind(addr);
 
-    spdlog::debug(pub_socket.endpoint());
+    spdlog::debug("Created Publisher with endpoint: {}", pub_socket.endpoint());
 
   }
 
@@ -39,7 +39,7 @@ class Publisher {
     this->pub_socket.async_send(
         azmq::message(asio::buffer(req)),
         [](const boost::system::error_code &error, size_t bytes_received){
-          spdlog::debug("Published bytes: {}", bytes_received);
+          spdlog::trace("Published bytes: {}", bytes_received);
           }, ZMQ_DONTWAIT);
   }
 
@@ -55,7 +55,7 @@ class Subscriber {
     sub_socket.connect(addr);
     sub_socket.set_option(azmq::socket::subscribe(""));
 
-    spdlog::debug(sub_socket.endpoint());
+    spdlog::debug("Created Subscriber with endpoint: {}", sub_socket.endpoint());
 
     m_buf.reserve(256);
     AsyncReceive();
@@ -63,7 +63,7 @@ class Subscriber {
 
   void AsyncReceive() {
 
-    spdlog::debug("Schedule async receive");
+    spdlog::trace("Schedule async receive");
 
     this->m_buf.resize(1024);
 
@@ -74,13 +74,11 @@ class Subscriber {
 
   void OnReceive(const boost::system::error_code &error, size_t bytes_received) {
 
-    spdlog::debug("Received bytes: {}", bytes_received);
+    spdlog::trace("Received bytes: {}", bytes_received);
 
     if (bytes_received) {
       this->m_buf.resize(bytes_received);
-//      json res = json::from_msgpack(this->m_buf);
-      spdlog::debug("Received: {}", this->m_buf[0]);
-//      spdlog::debug("Received: {}", res.dump());
+      spdlog::trace("Received: {}", this->m_buf[0]);
     }
     AsyncReceive();
   }

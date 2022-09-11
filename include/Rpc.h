@@ -27,6 +27,9 @@ class Client {
 
     req_socket.connect(addr);
     m_buf.reserve(256);
+
+    spdlog::debug("Created rpc client with endpoint: {}", addr);
+
   }
 
   template <typename... Ts>
@@ -65,6 +68,9 @@ class Server {
 
     rep_socket.bind(addr);
     m_buf.reserve(256);
+
+    spdlog::debug("Created rpc server with endpoint: {}", addr);
+
     Receive();
   }
 
