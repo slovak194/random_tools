@@ -9,12 +9,12 @@
 #include <thread>
 #include <string>
 
-//#include <nlohmann/json.hpp>
+#include <nlohmann/json.hpp>
 #include <azmq/socket.hpp>
 #include <spdlog/spdlog.h>
 
 using namespace boost;
-//using namespace nlohmann;
+using namespace nlohmann;
 
 namespace remote {
 
@@ -49,8 +49,8 @@ class Publisher {
 
 class Subscriber {
  public:
-  explicit Subscriber(const std::string &addr, std::vector<std::uint8_t> out_buf, asio::io_service &ios)
-      : m_buf(out_buf), sub_socket(ios) {
+  explicit Subscriber(const std::string &addr, std::function<void(const json)> &fun, asio::io_service &ios)
+      : fun(fun), sub_socket(ios) {
 
     sub_socket.connect(addr);
     sub_socket.set_option(azmq::socket::subscribe(""));
@@ -79,11 +79,18 @@ class Subscriber {
     if (bytes_received) {
       this->m_buf.resize(bytes_received);
       spdlog::trace("Received: {}", this->m_buf[0]);
+
+      j = json::from_msgpack(this->m_buf);
+
+      fun(j);
     }
     AsyncReceive();
   }
 
-  std::vector<std::uint8_t> &m_buf;
+  std::function<void(const json)> &fun;
+
+  json j;
+  std::vector<std::uint8_t> m_buf;
   azmq::sub_socket sub_socket;
 
 };

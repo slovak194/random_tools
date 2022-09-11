@@ -25,18 +25,25 @@ void SetSigHandler(boost::asio::signal_set &sigs, asio::io_service &ios) {
 
 int main(int argc, char **argv) {
 
-  spdlog::set_level(spdlog::level::debug);
+  spdlog::set_level(spdlog::level::trace);
 
   asio::io_service ios;
   boost::asio::signal_set m_signals(ios, SIGINT, SIGUSR1);
 
   SetSigHandler(m_signals, ios);
 
-  remote::pubsub::Subscriber sub("tcp://127.0.0.1:5555", ios);
+  std::function<void(json)> cbk = [](const json j){ spdlog::debug(j.dump(1));};
+
+  remote::pubsub::Subscriber sub("tcp://127.0.0.1:5002", cbk, ios);
 
   std::thread th([&ios](){
     ios.run();
   });
+
+//  while (!ios.stopped()) {
+//    spdlog::debug(sub.j.dump(1));
+//    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+//  }
 
   th.join();
 
