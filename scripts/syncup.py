@@ -61,8 +61,7 @@ if __name__ == "__main__":
         if track_events.intersection(set(type_names)):
             if "~" in filename:
                 continue
-
-            if ".git" in path:
+            if "/." in path:
                 continue
 
             dirty = True
