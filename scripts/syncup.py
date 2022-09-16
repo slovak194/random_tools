@@ -5,6 +5,7 @@ import threading
 import argparse
 import subprocess
 import inotify.adapters
+import inotify.constants as ic
 import time
 
 dirty = False
@@ -54,14 +55,15 @@ if __name__ == "__main__":
 
     th = threading.Thread(target=worker).start()
 
-    i = inotify.adapters.InotifyTree(src)
-    track_events = {'IN_CREATE', 'IN_MODIFY', 'IN_DELETE'}
+    i = inotify.adapters.InotifyTree(src, mask=(ic.IN_CREATE | ic.IN_MODIFY | ic.IN_DELETE))
+
     for event in i.event_gen(yield_nones=False):
         (_, type_names, path, filename) = event
-        if track_events.intersection(set(type_names)):
-            if "~" in filename:
-                continue
-            if "/." in path:
-                continue
+        if "~" in filename:
+            continue
+        if "/." in path:
+            continue
+        if "build" in path:
+            continue
 
-            dirty = True
+        dirty = True
