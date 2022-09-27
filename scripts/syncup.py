@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 import threading
 import argparse
 import subprocess
@@ -18,7 +19,12 @@ def worker():
         if dirty:
             dirty = False
             print(cmd_sync_all)
-            subprocess.Popen(cmd_sync_all, shell=True).wait()
+
+            process = subprocess.Popen(cmd_sync_all, shell=True)
+            process.communicate()
+            if process.returncode != 0:
+                print("Exiting ...")
+                sys.exit(1)
 
         time.sleep(1)
 
@@ -51,7 +57,12 @@ if __name__ == "__main__":
     cmd_sync_all = f"rsync -avz --delete --exclude '.git' --filter=':- {src}/.gitignore' {src} {remote_user}@{remote_ip}:{remote_path}"
 
     print(cmd_sync_all)
-    subprocess.Popen(cmd_sync_all, shell=True).wait()
+
+    process = subprocess.Popen(cmd_sync_all, shell=True)
+    process.communicate()
+    if process.returncode != 0:
+        print("Exiting ...")
+        sys.exit(1)
 
     th = threading.Thread(target=worker).start()
 
