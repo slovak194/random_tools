@@ -1,0 +1,15 @@
+[Unit]
+Description=frpc
+After=network.target
+
+[Service]
+ExecStart=/opt/frp/frpc -c /opt/frp/frpc.ini
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+IgnoreSIGPIPE=true
+Restart=always
+RestartSec=30
+Type=simple
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,15 @@
+[Unit]
+Description=frps
+After=network.target
+
+[Service]
+ExecStart=/opt/frp/frps -c /opt/frp/frps.ini
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+IgnoreSIGPIPE=true
+Restart=always
+RestartSec=3
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
