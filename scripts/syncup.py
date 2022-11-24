@@ -26,7 +26,7 @@ def worker():
                 print("Exiting ...")
                 sys.exit(1)
 
-        time.sleep(1)
+        time.sleep(0.5)
 
 
 if __name__ == "__main__":
@@ -43,18 +43,19 @@ if __name__ == "__main__":
     dst = args["dst"]
     src = args["src"]
 
-    local_project_name = src.split("/")[-1]
+    # local_project_name = src.split("/")[-1]
+    #
+    # remote_user, remote_ip_path = dst.split("@")
+    # res = remote_ip_path.split(":")
+    #
+    # if len(res) == 2:
+    #     remote_ip, remote_path = res
+    # elif len(res) == 1:
+    #     remote_ip = res[0]
+    #     remote_path = f"/home/{remote_user}/"
 
-    remote_user, remote_ip_path = dst.split("@")
-    res = remote_ip_path.split(":")
-
-    if len(res) == 2:
-        remote_ip, remote_path = res
-    elif len(res) == 1:
-        remote_ip = res[0]
-        remote_path = f"/home/{remote_user}/"
-
-    cmd_sync_all = f"rsync -avz --delete --exclude '.git' --filter=':- {src}/.gitignore' {src} {remote_user}@{remote_ip}:{remote_path}"
+    # cmd_sync_all = f"rsync -avz --delete --exclude '.git' --filter=':- {src}/.gitignore' {src} {remote_user}@{remote_ip}:{remote_path}"
+    cmd_sync_all = f"rsync -avz --delete --exclude '.git' --filter=':- {src}/.gitignore' {src} {dst}"
 
     print(cmd_sync_all)
 
