@@ -32,21 +32,18 @@ def create_numpy_arrays(ldf):
     return ldf
 
 
-# TODO, debug 2d arrays
 def unwrap_numeric_indexes(ldf):
     for k in ldf.keys():
-        if ldf[k].dtype == np.object:
-            npobj = ldf[k].to_numpy()
-
-            if len(npobj[0].shape) == 1:
-                nstacked = np.vstack(npobj)
-                for i in range(nstacked.shape[1]):
-                    ldf[k + "." + str(i)] = nstacked[:, i]
-            elif len(npobj[0].shape) == 2:
-                nstacked = np.vstack(npobj).reshape((npobj.shape[0], -1))
-                for i in range(npobj[0].shape[0]):
-                    for j in range(npobj[0].shape[1]):
-                        ldf[k + "." + str(i) + str(j)] = nstacked[:, i*npobj[0].shape[0] + j]
+        if type(ldf[k].iloc[0]) == np.ndarray:
+            if len(ldf[k].iloc[0].shape) == 2:
+                for i in range(ldf[k].iloc[0].shape[0]):
+                    for j in range(ldf[k].iloc[0].shape[1]):
+                        ldf[k + "." + str(i) + str(j)] = ldf[k].apply(lambda x: x[i, j])
+            elif len(ldf[k].iloc[0].shape) == 1:
+                for i in range(ldf[k].iloc[0].shape[0]):
+                    ldf[k + "." + str(i)] = ldf[k].apply(lambda x: x[i])
+            else:
+                pass
     return ldf
 
 
