@@ -32,6 +32,7 @@ def create_numpy_arrays(ldf):
     return ldf
 
 
+# TODO, debug 2d arrays
 def unwrap_numeric_indexes(ldf):
     for k in ldf.keys():
         if ldf[k].dtype == np.object:
@@ -167,28 +168,4 @@ def plot_df_entry(df, plot_groups, skip_names=(), wrt_iloc=False, fig=None, tigh
         figure.canvas.manager.window.attributes('-topmost', 1)
 
     return figure, figure.axes
-
-
-# %%
-
-log_path = "/home/slovak/fishbot/build/dump_0_plane_fit.msg"
-
-dump = load_msgpack_dataset(log_path)
-
-# %%
-
-f, axs = plot_df_entry(dump, [
-    ["plane.*"],
-], wrt_iloc=True, fig=0, tight=False)
-
-# %%
-
-f, axs = plot_df_entry(dump, [
-    [
-        "plane.0",
-        "plane.1",
-        "plane.2",
-        "plane.3"
-    ],
-], wrt_iloc=True, fig=0, tight=False)
 
