@@ -45,4 +45,17 @@ void to_json(nlohmann::json &j, const T &matrix) {
       {"order", is_row_major ? "C" : "F"}
   };
 }
+
+template<typename T>
+void to_json(nlohmann::json &j, const Eigen::Quaternion<T> &q) {
+
+  j = {
+      {"x", q.x()},
+      {"y", q.y()},
+      {"z", q.z()},
+      {"w", q.w()},
+  };
 }
+
+}
+
