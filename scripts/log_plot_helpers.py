@@ -23,6 +23,9 @@ def create_numpy_arrays(ldf):
         ldf[var_name] = ldf.apply(lambda x: np.array(
             x[var_name + ".data"], dtype=np.dtype(x[var_name + ".dtype"])).reshape(x[var_name + ".shape"], order=x[var_name + ".order"]).squeeze(), axis=1)
 
+        # if isinstance(ldf[var_name][0], np.ndarray) and ldf[var_name][0].shape == ():
+        #     ldf[var_name] = ldf.apply(lambda x: x[0], axis=1)
+
     for var_name in var_names:
         ldf = ldf.drop(var_name + ".data", axis=1)
         ldf = ldf.drop(var_name + ".dtype", axis=1)
@@ -34,7 +37,7 @@ def create_numpy_arrays(ldf):
 
 def unwrap_numeric_indexes(ldf):
     for k in ldf.keys():
-        if type(ldf[k].iloc[0]) == np.ndarray:
+        if isinstance(ldf[k].iloc[0], np.ndarray):
             if len(ldf[k].iloc[0].shape) == 2:
                 for i in range(ldf[k].iloc[0].shape[0]):
                     for j in range(ldf[k].iloc[0].shape[1]):
@@ -42,8 +45,10 @@ def unwrap_numeric_indexes(ldf):
             elif len(ldf[k].iloc[0].shape) == 1:
                 for i in range(ldf[k].iloc[0].shape[0]):
                     ldf[k + "." + str(i)] = ldf[k].apply(lambda x: x[i])
+            elif len(ldf[k].iloc[0].shape) == 0:
+                ldf[k] = ldf[k].apply(lambda x: x.item())
             else:
-                pass
+                raise NotImplementedError("Arrays with sizes > 2 are not supported")
     return ldf
 
 
