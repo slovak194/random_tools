@@ -20,3 +20,5 @@ add_executable(test_rpc_client test_rpc_client.cpp)
 
 add_executable(test_pub test_pub.cpp)
 add_executable(test_sub test_sub.cpp)
+
+add_executable(doctest_json doctest_json.cpp)

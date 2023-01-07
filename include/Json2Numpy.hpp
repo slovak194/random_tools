@@ -2,8 +2,6 @@
 
 #include <type_traits>
 
-#include <nlohmann/json.hpp>
-
 struct type {
   template<typename T>
   using base_type = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
