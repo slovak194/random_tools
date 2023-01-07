@@ -6,8 +6,6 @@
 #include <Eigen/Geometry>
 #include <nlohmann/json.hpp>
 
-#include <doctest.h>
-
 #include "Json2Numpy.hpp"
 
 namespace Eigen {
@@ -51,14 +49,6 @@ void from_json(const nlohmann::json &j, Matrix<Scalar, Rows, Cols> &matrix) {
   }
 }
 
-TEST_CASE_TEMPLATE("eigen matrix/vector", T, Matrix2d, Matrix4f, Vector3d, Vector2d, Vector4i
-) {
-  T m = T::Random();
-  nlohmann::json json = m;
-  T m1 = json.get<T>();
-  CHECK(m == m1);
-}
-
 template<typename T>
 void to_json(nlohmann::json &j, const Quaternion<T> &q) {
 
@@ -78,15 +68,29 @@ void from_json(const nlohmann::json &j, Quaternion<Scalar> &q) {
   q.w() = j["w"].get<Scalar>();
 }
 
-TEST_CASE_TEMPLATE("eigen quaternion", Scalar, double, float) {
-  Quaternion<Scalar> q;
-  Quaternion<Scalar> q1;
+}
+
+#include <doctest.h>
+
+TEST_SUITE("eigen") {
+
+TEST_CASE_TEMPLATE("matrix/vector", T, Eigen::Matrix2d, Eigen::Matrix4f, Eigen::Vector3d, Eigen::Vector2d, Eigen::Vector4i
+) {
+  T m = T::Random();
+  nlohmann::json json = m;
+  T m1 = json.get<T>();
+  CHECK(m == m1);
+
+}
+
+TEST_CASE_TEMPLATE("quaternion", Scalar, double, float) {
+  Eigen::Quaternion<Scalar> q;
+  Eigen::Quaternion<Scalar> q1;
   nlohmann::json json;
-  q = Quaternion<Scalar>::UnitRandom();
+  q = Eigen::Quaternion<Scalar>::UnitRandom();
   json = q;
-  q1 = json.get<Quaternion<Scalar>>();
+  q1 = json.get<Eigen::Quaternion<Scalar>>();
   CHECK(q.coeffs() == q1.coeffs());
 }
 
 }
-

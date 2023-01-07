@@ -2,3 +2,5 @@
 #include "doctest.h"
 
 #include <Json2Eigen.hpp>
+#include <Json2Manif.hpp>
+#include <NamedBundle.hpp>
