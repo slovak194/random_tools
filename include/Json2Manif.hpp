@@ -40,7 +40,6 @@ template<typename T> inline constexpr const char *ElementName = ElName<BaseType<
 template<typename G>
 void to_json(nlohmann::json &j, const G &g) {
   j["type"] = ElementName<G>;
-//  j["coeffs"] = g.coeffs();
   j["coeffs"] = std::vector(g.data(), g.data() + g.coeffs().size());
   assert(!j["type"].template get<std::string>().empty());
 }
@@ -73,7 +72,6 @@ void to_json(nlohmann::json &j, const Eigen::Map<G> &g) {
 template<typename Scalar, template<typename> class ... Args>
 void to_json(nlohmann::json &j, const Bundle<Scalar, Args...> &bundle) {
   using ThisBundle = Bundle<Scalar, Args...>;
-
   j["type"] = ElementName<ThisBundle>;
   j["elements"] = nlohmann::json::array();
   j["coeffs"] = std::vector(bundle.data(), bundle.data() + bundle.coeffs().size());;
@@ -85,6 +83,9 @@ void to_json(nlohmann::json &j, const Bundle<Scalar, Args...> &bundle) {
     (fill(j, I, bundle.template element<I>()), ...);
   };
   lam(std::make_index_sequence<internal::traits<ThisBundle>::BundleSize>{});
+
+  assert(!j["type"].template get<std::string>().empty());
+
 }
 
 template<typename Scalar, template<typename> class ... Args>
