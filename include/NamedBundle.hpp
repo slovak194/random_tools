@@ -16,7 +16,8 @@ namespace named_bundle {
 
 template<typename S, typename T>
 void print_element(T t, std::size_t i) {
-  std::cout << S::_from_index(i)._to_string() << ": " << t << " ";
+  Eigen::IOFormat CommaInitFmt(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ", ", "", "", "[", "]");
+  std::cout << std::fixed << std::setprecision(3) << S::_from_index(i)._to_string() << ": " << t.coeffs().transpose().format(CommaInitFmt) << " ";
 }
 
 template<typename S, typename T, std::size_t... I>
@@ -27,6 +28,7 @@ void print(const T &state, std::index_sequence<I...>) {
 template<typename S, typename T>
 void print(const T &state) {
   print<S>(state, std::make_index_sequence<S::_size()>{});
+  std::cout << "\n";
 }
 
 template<typename S, typename T>
@@ -34,36 +36,29 @@ auto to_json(const T &state) {
   nlohmann::json j;
   j["type"] = manif::ElementName<T>;
   j["elements"] = nlohmann::json::array();
-  j["coeffs"] = std::vector(state.data(), state.data() + state.coeffs().size());;
 
   auto fill = [](nlohmann::json &j, std::size_t i, auto el) {
     j["elements"][i] = el;
     j["elements"][i]["name"] = S::_from_index(i)._to_string();
   };
 
-  auto lam = [&]<std::size_t... I>(std::index_sequence<I...>) {
+  auto unroll = [&]<std::size_t... I>(std::index_sequence<I...>) {
     (fill(j, I, state.template element<I>()), ...);
   };
 
-  lam(std::make_index_sequence<manif::internal::traits<T>::BundleSize>{});
+  unroll(std::make_index_sequence<manif::internal::traits<T>::BundleSize>{});
 
   assert(!j["type"].template get<std::string>().empty());
 
   return j;
 }
 
-//template<typename S, typename T>
-//void from_json(const nlohmann::json &j, T &state) {
-//
-//  auto lam = [&]<std::size_t... I>(std::index_sequence<I...>) {
-//    ((state.template element<I>() = j["elements"].get<T::template Element<I>>()), ...);
-//  };
-//
-//  lam(std::make_index_sequence<manif::internal::traits<T>::BundleSize>{});
-//
-//}
+template <typename T>
+static constexpr std::size_t size = manif::internal::traits<T>::BundleSize;
 
 }
+
+#ifdef DO_TESTS
 
 #include <doctest.h>
 
@@ -129,3 +124,5 @@ TEST_CASE("named bundle") {
 }
 
 }
+
+#endif

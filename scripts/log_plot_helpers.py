@@ -2,6 +2,7 @@ import numpy as np
 import numbers
 import pandas as pd
 import msgpack
+import manifpy as manif
 
 import matplotlib
 
@@ -14,6 +15,91 @@ pd.set_option('display.max_rows', 1000)
 pd.set_option('display.max_columns', 1000)
 pd.set_option('display.width', 1000)
 pd.set_option('display.max_colwidth', 1000)
+
+
+def create_manif_groups(ldf):
+    str_to_type = {
+        "SO2": manif.SO2,
+        "SO3": manif.SO3,
+        "SE2": manif.SE2,
+        "SE3": manif.SE3,
+        "R1": manif.R1,
+        "R2": manif.R2,
+        "R3": manif.R3,
+        "R4": manif.R4,
+        "R5": manif.R5,
+        "R6": manif.R6,
+        "R7": manif.R7,
+        "R8": manif.R8,
+        "Bundle": None,
+        "SO2Tangent": manif.SO2Tangent,
+        "SO3Tangent": manif.SO3Tangent,
+        "SE2Tangent": manif.SE2Tangent,
+        "SE3Tangent": manif.SE3Tangent,
+        "R1Tangent": manif.R1Tangent,
+        "R2Tangent": manif.R2Tangent,
+        "R3Tangent": manif.R3Tangent,
+        "R4Tangent": manif.R4Tangent,
+        "R5Tangent": manif.R5Tangent,
+        "R6Tangent": manif.R6Tangent,
+        "R7Tangent": manif.R7Tangent,
+        "R8Tangent": manif.R8Tangent,
+        "BundleTangent": None,
+    }
+
+    bundle_names = [k.replace(".elements", "") for k in ldf.keys() if ".elements" in k]
+
+    def get_element_types(bundle_inst):
+        element_types = [element["type"].replace("manif_", "") for element in bundle_inst]
+
+        for i in range(len(element_types)):
+            if element_types[i] == "Rn":
+                element_types[i] = "R" + str(len(bundle_inst[i]["coeffs"]))
+
+            if element_types[i] == "RnTangent":
+                element_types[i] = "R" + str(len(bundle_inst[i]["coeffs"])) + "Tangent"
+
+        return element_types
+
+    def get_element_names(bundle_inst):
+        return [element["name"] for element in bundle_inst]
+
+    for bundle_name in bundle_names:
+        element_names = get_element_names(ldf[bundle_name + ".elements"][0])
+        element_types = get_element_types(ldf[bundle_name + ".elements"][0])
+
+        for idx, element_name in enumerate(element_names):
+            if element_types[idx].startswith("R"):
+                ldf[bundle_name + "." + element_name] = \
+                    ldf.apply(lambda x: np.array(x[bundle_name + ".elements"][idx]["coeffs"]), axis=1)
+            else:
+                ldf[bundle_name + "." + element_name] = \
+                    ldf.apply(lambda x: str_to_type[element_types[idx]](np.array(x[bundle_name + ".elements"][idx]["coeffs"])), axis=1)
+
+    var_names = [k.replace(".type", "") for k in ldf.keys() if ".type" in k]
+
+    for var_name in var_names:
+        group_type = ldf[var_name + ".type"][0].replace("manif_", "")
+        if group_type == "Rn":
+            group_type = "R" + str(len(ldf[var_name + ".coeffs"][0]))
+
+        if group_type == "RnTangent":
+            group_type = "R" + str(len(ldf[var_name + ".coeffs"][0])) + "Tangent"
+
+        if group_type in str_to_type.keys():
+            if group_type == "Bundle" or group_type == "BundleTangent":
+                pass
+            else:
+                if group_type.startswith("R"):
+                    ldf[var_name] = ldf.apply(lambda x: np.array(x[var_name + ".coeffs"]), axis=1)
+                else:
+                    ldf[var_name] = ldf.apply(lambda x: str_to_type[group_type](np.array(x[var_name + ".coeffs"])), axis=1)
+
+    for name in ldf.keys():
+        if name.endswith(".type") or name.endswith(".coeffs") or name.endswith(".elements"):
+            ldf = ldf.drop(name, axis=1)
+
+    return ldf
 
 
 def create_numpy_arrays(ldf):
@@ -41,7 +127,7 @@ def unwrap_numeric_indexes(ldf):
             if len(ldf[k].iloc[0].shape) == 2:
                 for i in range(ldf[k].iloc[0].shape[0]):
                     for j in range(ldf[k].iloc[0].shape[1]):
-                        ldf[k + "." + str(i) + str(j)] = ldf[k].apply(lambda x: x[i, j])
+                        ldf[k + "." + str(i) + "." + str(j)] = ldf[k].apply(lambda x: x[i, j])
             elif len(ldf[k].iloc[0].shape) == 1:
                 for i in range(ldf[k].iloc[0].shape[0]):
                     ldf[k + "." + str(i)] = ldf[k].apply(lambda x: x[i])
@@ -53,11 +139,11 @@ def unwrap_numeric_indexes(ldf):
 
 
 def load_msgpack_dataset(l_dump_path):
-    
     with open(l_dump_path, "rb") as data_file:
         data = [unpacked for unpacked in msgpack.Unpacker(data_file)]
 
     lldf = pd.json_normalize(data)
+    lldf = create_manif_groups(lldf)
     lldf = create_numpy_arrays(lldf)
     lldf = unwrap_numeric_indexes(lldf)
 
@@ -66,6 +152,7 @@ def load_msgpack_dataset(l_dump_path):
 
 def plot_df_entry(df, plot_groups, skip_names=(), wrt_iloc=False, fig=None, tight=True, top=True):
     plt.style.use('default')
+
     # plt.style.use('dark_background')
 
     def get_figure(l_fig):
@@ -100,7 +187,6 @@ def plot_df_entry(df, plot_groups, skip_names=(), wrt_iloc=False, fig=None, tigh
             print("len(matches) == 0:  # Enabling backward compatibility")
             lplot["name"] = lplot["name"] + "*"
             matches = get_matches(lplot["name"], df.columns)
-
 
         for match in matches:
             if any([skip_name in match for skip_name in skip_names]):
@@ -170,4 +256,3 @@ def plot_df_entry(df, plot_groups, skip_names=(), wrt_iloc=False, fig=None, tigh
         figure.canvas.manager.window.attributes('-topmost', 1)
 
     return figure, figure.axes
-

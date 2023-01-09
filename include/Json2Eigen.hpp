@@ -70,6 +70,8 @@ void from_json(const nlohmann::json &j, Quaternion<Scalar> &q) {
 
 }
 
+#ifdef DO_TESTS
+
 #include <doctest.h>
 
 TEST_SUITE("eigen") {
@@ -94,3 +96,5 @@ TEST_CASE_TEMPLATE("quaternion", Scalar, double, float) {
 }
 
 }
+
+#endif
