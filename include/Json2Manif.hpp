@@ -144,8 +144,17 @@ void from_json(const nlohmann::json &j, BundleTangent<Scalar, Args...> &bundle) 
 TEST_SUITE("manif") {
 
 TEST_CASE("traits") {
-  CHECK(manif::ElementName<manif::Bundle<double, manif::SO3, manif::R3>> == "Bundle");
-  CHECK(manif::ElementName<manif::BundleTangent<double, manif::SO3, manif::R3>> == "BundleTangent");
+  std::cout << manif::ElementName<manif::Bundle<double, manif::SO3, manif::R3>> << std::endl;
+  std::cout << manif::ElementName<manif::BundleTangent<double, manif::SO3, manif::R3>> << std::endl;
+
+  std::string bundle = manif::ElementName<manif::Bundle<double, manif::SO3, manif::R3>>;
+  std::string bundle_tangent = manif::ElementName<manif::BundleTangent<double, manif::SO3, manif::R3>>;
+
+  std::cout << bundle << std::endl;
+  std::cout << bundle_tangent << std::endl;
+
+  CHECK_EQ(bundle, "manif_Bundle");
+  CHECK_EQ(bundle_tangent, "manif_BundleTangent");
 }
 
 TEST_CASE("just bundle") {
@@ -156,17 +165,17 @@ TEST_CASE("just bundle") {
   nlohmann::json json;
   g = ThisGroup::Random();
   json = g;
-  CHECK(json["type"].get<std::string>() == "Bundle");
+  CHECK_EQ(json["type"].get<std::string>(), "manif_Bundle");
   std::cout << json.dump() << "\n";
   g1 = json.get<ThisGroup>();
-  CHECK(g == g1);
+  CHECK_EQ(g, g1);
   t = ThisTangent::Random();
   json = t;
   std::string tangent_type = json["type"].get<std::string>();
-  CHECK(tangent_type == "BundleTangent");
+  CHECK_EQ(tangent_type, "manif_BundleTangent");
   std::cout << json.dump() << "\n";
   t1 = json.get<ThisTangent>();
-  CHECK(t == t1);
+  CHECK_EQ(t, t1);
 }
 
 TEST_CASE_TEMPLATE("group and tangent", ThisGroup,
@@ -189,31 +198,14 @@ TEST_CASE_TEMPLATE("group and tangent", ThisGroup,
   json = g;
   std::cout << json.dump() << "\n";
   g1 = json.get<ThisGroup>();
-  CHECK(g == g1);
+  CHECK_EQ(g, g1);
   t = ThisTangent::Random();
   json = t;
   std::cout << json.dump() << "\n";
   t1 = json.get<ThisTangent>();
-  CHECK(t == t1);
+  CHECK_EQ(t, t1);
+  CHECK_EQ(t, t1);
 }
-
-//TEST_CASE_TEMPLATE("group map", ThisGroup,
-//                   manif::Bundle<double, manif::SO3>,
-//                   manif::Bundle<double, manif::SO3>,
-//                   manif::Bundle<double, manif::SO2>,
-//                   manif::Bundle<double, manif::SO2>,
-//                   manif::Bundle<double, manif::R3>,
-//                   manif::Bundle<double, manif::R2>,
-//                   manif::Bundle<double, manif::R3>,
-//                   manif::Bundle<double, manif::R2>
-//) {
-//  ThisGroup g, g1;
-//  nlohmann::json json;
-//  g = ThisGroup::Random();
-//  json = g.template element<0>();
-//  g1.template element<0>() = json.get<ThisGroup>();
-//  CHECK(g == g1);
-//}
 
 }
 

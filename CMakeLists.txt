@@ -4,6 +4,7 @@ project(remote-tools)
 option(BUILD_TESTS "add test subdir" 1)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-psabi")
 

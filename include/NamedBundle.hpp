@@ -99,10 +99,10 @@ TEST_CASE("named bundle") {
 
   std::cout << json.dump() << "\n";
 
-  CHECK(json["state"]["elements"][1]["name"].get<std::string>() == "AngularVelocity");
-  CHECK(json["state"]["elements"][1]["coeffs"][0].get<double>() == 1.0);
-  CHECK(json["state"]["elements"][1]["coeffs"][1].get<double>() == 2.0);
-  CHECK(json["state"]["elements"][1]["coeffs"][2].get<double>() == 3.0);
+  CHECK_EQ(json["state"]["elements"][1]["name"].get<std::string>(), "AngularVelocity");
+  CHECK_EQ(json["state"]["elements"][1]["coeffs"][0].get<double>(), 1.0);
+  CHECK_EQ(json["state"]["elements"][1]["coeffs"][1].get<double>(), 2.0);
+  CHECK_EQ(json["state"]["elements"][1]["coeffs"][2].get<double>(), 3.0);
 
   std::string dump_file_path = "/home/slovak/kalman-benchmark/test/manifolds/to_json.msg";
   std::remove(dump_file_path.c_str());
@@ -113,13 +113,13 @@ TEST_CASE("named bundle") {
 
   nlohmann::json json_new = nlohmann::json::from_msgpack(std::ifstream(dump_file_path, std::ios::binary));
   std::cout << json_new.dump() << "\n";
-  CHECK(json_new == json);
+  CHECK_EQ(json_new, json);
 
   State state_new;
 
   state_new = json_new["state"].get<State>();
 
-  CHECK(state == state_new);
+  CHECK_EQ(state, state_new);
 
 }
 
