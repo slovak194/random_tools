@@ -4,6 +4,7 @@
 #include <fstream>
 
 #include <iostream>
+#include <iomanip>
 
 #include <manif/manif.h>
 
