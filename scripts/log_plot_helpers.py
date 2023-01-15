@@ -259,3 +259,76 @@ def plot_df_entry(df, plot_groups, skip_names=(), wrt_iloc=False, fig=None, tigh
         figure.canvas.manager.window.attributes('-topmost', 1)
 
     return figure, figure.axes
+
+
+def from_two_vectors(a, b):
+    # q.xyz = cross(u, v)
+    # q.w   = dot(u, v) + sqrt(||u||^2 * ||v||^2)
+
+    q = np.zeros(4)
+
+    q[0:3] = np.cross(a, b)
+    q[3] = np.dot(a, b) + np.sqrt(np.dot(a, a) * np.dot(b, b))
+    qnorm = np.linalg.norm(q)
+    if qnorm == 0:
+        return manif.SO3.Identity()
+    q = q / np.linalg.norm(q)
+
+    return manif.SO3(q)
+
+
+def arrow3d(lax, v1, v2, width=0.5, head=0.5, headwidth=2, **kw):
+
+    length = np.linalg.norm(v2)
+
+    w = width
+    h = head
+    hw = headwidth
+
+    a = [[0, 0], [w, 0], [w, (1 - h) * length], [hw * w, (1 - h) * length], [0, length]]
+    a = np.array(a)
+
+    r, theta = np.meshgrid(a[:, 0], np.linspace(0, 2 * np.pi, 10))
+    z = np.tile(a[:, 1], r.shape[0]).reshape(r.shape)
+    x = r * np.sin(theta)
+    y = r * np.cos(theta)
+
+    trans = manif.SE3(v1, from_two_vectors(np.array((0., 0., 1.)), v2).coeffs())
+
+    b2 = trans.rotation() @ np.c_[x.flatten(), y.flatten(), z.flatten()].T
+    b2 = b2.T + trans.translation()
+
+    x = b2[:, 0].reshape(r.shape)
+    y = b2[:, 1].reshape(r.shape)
+    z = b2[:, 2].reshape(r.shape)
+
+    lax.plot_surface(x, y, z, **kw)
+
+
+
+
+def plot_group(lax, g, tips=(0, 1, 2), scale_tips=1, f='.-', name=""):
+    lines = []
+
+    if isinstance(g, manif.SO3):
+        ax_base = np.zeros(g.Dim)
+    elif isinstance(g, manif.SE3):
+        ax_base = g.translation()
+
+    ax_tips = g.rotation() * scale_tips
+
+    c = ['r', 'g', 'b']
+
+    for tip in tips:
+        l = lax.plot(
+            *[[ax_base[j], ax_base[j] + ax_tips[j, tip]] for j in range(g.Dim)],
+            c[tip] + f)
+        lines += l
+
+    if name != "":
+        lax.text(*[ax_tips[j, 0] for j in range(g.Dim)], name)
+
+    return lines
+
+
+# %%
