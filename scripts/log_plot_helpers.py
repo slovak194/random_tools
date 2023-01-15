@@ -147,6 +147,9 @@ def load_msgpack_dataset(l_dump_path):
     lldf = create_numpy_arrays(lldf)
     lldf = unwrap_numeric_indexes(lldf)
 
+    if "timestamp" in lldf.keys():
+        lldf = lldf.set_index("timestamp")
+
     return lldf
 
 
