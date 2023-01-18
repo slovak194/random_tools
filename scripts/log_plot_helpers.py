@@ -62,14 +62,20 @@ def create_manif_groups(ldf):
         return element_types
 
     def get_element_names(bundle_inst):
-        return [element["name"] for element in bundle_inst]
+        if "name" in bundle_inst[0].keys():
+            return [element["name"] for element in bundle_inst]
+        else:
+            return None
 
     for bundle_name in bundle_names:
         element_names = get_element_names(ldf[bundle_name + ".elements"][0])
         element_types = get_element_types(ldf[bundle_name + ".elements"][0])
 
+        if element_names is None:
+            element_names = [str(i) for i in range(len(element_types))]
+
         for idx, element_name in enumerate(element_names):
-            if element_types[idx].startswith("R"):
+            if element_types[idx].startswith("R") or element_types[idx].endswith("Tangent"):
                 ldf[bundle_name + "." + element_name] = \
                     ldf.apply(lambda x: np.array(x[bundle_name + ".elements"][idx]["coeffs"]), axis=1)
             else:
@@ -90,13 +96,14 @@ def create_manif_groups(ldf):
             if group_type == "Bundle" or group_type == "BundleTangent":
                 pass
             else:
-                if group_type.startswith("R"):
+                if group_type.startswith("R") or group_type.endswith("Tangent"):
+                    print(var_name, group_type)
                     ldf[var_name] = ldf.apply(lambda x: np.array(x[var_name + ".coeffs"]), axis=1)
                 else:
                     ldf[var_name] = ldf.apply(lambda x: str_to_type[group_type](np.array(x[var_name + ".coeffs"])), axis=1)
 
     for name in ldf.keys():
-        if name.endswith(".type") or name.endswith(".coeffs") or name.endswith(".elements"):
+        if name.endswith(".type") or name.endswith(".coeffs"):  #  or name.endswith(".elements")
             ldf = ldf.drop(name, axis=1)
 
     return ldf
@@ -153,7 +160,7 @@ def load_msgpack_dataset(l_dump_path):
     return lldf
 
 
-def plot_df_entry(df, plot_groups, skip_names=(), wrt_iloc=False, fig=None, tight=True, top=True):
+def plot_df_entry(df, plot_groups, skip_names=(), wrt_iloc=False, fig=None, tight=True, top=True, legend=True):
     plt.style.use('default')
 
     # plt.style.use('dark_background')
@@ -187,9 +194,17 @@ def plot_df_entry(df, plot_groups, skip_names=(), wrt_iloc=False, fig=None, tigh
         matches = get_matches(lplot["name"], df.columns)
 
         if len(matches) == 0:  # Backward compatibility
-            print("len(matches) == 0:  # Enabling backward compatibility")
+            print(lplot["name"] + " was not found in df.columns. Enabling backward compatibility")
             lplot["name"] = lplot["name"] + "*"
             matches = get_matches(lplot["name"], df.columns)
+
+        if lplot.get("glambda", None) is not None:
+            ddd = {k: v for k, v in lplot.items()}
+            ddd["data"] = df.apply(lplot["glambda"], axis=1)
+            ddd["plot_name"] = lplot["name"]
+            ddd["ax"] = ax
+
+            lplots.append(ddd)
 
         for match in matches:
             if any([skip_name in match for skip_name in skip_names]):
@@ -218,8 +233,8 @@ def plot_df_entry(df, plot_groups, skip_names=(), wrt_iloc=False, fig=None, tigh
         else:
             plot["ax"].plot(plot["data"].index, plot["data"], '.-', label=str(plot["plot_name"]))
 
-        if len(plot["ax"].get_lines()) > 0:
-            plot["ax"].legend(loc='upper right')
+        if len(plot["ax"].get_lines()) > 0 and legend:
+            plot["ax"].legend(loc='upper right', framealpha=0.1)
 
         plot["ax"].grid(True, which="major")
         plot["ax"].minorticks_on()
@@ -329,6 +344,33 @@ def plot_group(lax, g, tips=(0, 1, 2), scale_tips=1, f='.-', name=""):
         lax.text(*[ax_tips[j, 0] for j in range(g.Dim)], name)
 
     return lines
+
+
+def get_bundle_plots(ldf, bundle_name):
+    some_dict = {el["name"]: {
+        "size": len(el["coeffs"]),
+        "type": el["type"],
+    } for el in ldf[bundle_name+".elements"][0]
+    }
+
+    all_prints = []
+
+    for name, dv in some_dict.items():
+        all_prints += [[f"{bundle_name}.{name}.{n}" for n in range(dv["size"])]]
+
+    return all_prints
+
+
+def numpy_to_json(inp_array):
+    shape = list(inp_array.shape)
+    if len(shape) == 0:
+        shape = [1, 1]
+    return {
+        "data": inp_array.reshape((-1,)).tolist(),
+        "dtype": inp_array.dtype.str.replace("<", "").replace(">", ""),
+        "order": "F",
+        "shape": shape
+    }
 
 
 # %%
