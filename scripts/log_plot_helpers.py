@@ -209,7 +209,7 @@ def plot_df_entry(df, plot_groups, skip_names=(), wrt_iloc=False, fig=None, tigh
         for match in matches:
             if any([skip_name in match for skip_name in skip_names]):
                 continue
-            if df[match].dtypes == np.dtype('O'):
+            if df[match].dtypes == np.dtype('O') and "lambda" not in lplot.keys():
                 continue
             ddd = {k: v for k, v in lplot.items()}
             ddd["data"] = df[match].copy()

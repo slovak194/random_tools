@@ -37,6 +37,18 @@ inline constexpr const char *ElName<BundleTangent<Scalar, Args...>> = "manif_Bun
 
 template<typename T> inline constexpr const char *ElementName = ElName<BaseType<T>>;
 
+
+template<typename T> constexpr const bool IsTComp = false;
+
+template<typename Scalar> constexpr const bool IsTComp<SO2Tangent<Scalar>> = true;
+template<typename Scalar> constexpr const bool IsTComp<SO3Tangent<Scalar>> = true;
+
+template<typename Scalar> constexpr const bool IsTComp<SO2<Scalar>> = true;
+template<typename Scalar> constexpr const bool IsTComp<SO3<Scalar>> = true;
+
+template<typename T> constexpr const bool IsCompact = IsTComp<BaseType<T>>;
+
+
 template<typename ThisGroup>
 void to_json(nlohmann::json &j, const ThisGroup &g) {
   j["type"] = ElementName<ThisGroup>;

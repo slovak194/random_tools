@@ -75,10 +75,11 @@ void from_json(const nlohmann::json &j, Quaternion<Scalar> &q) {
 
 TEST_SUITE("eigen") {
 
-TEST_CASE_TEMPLATE("static matrix/vector serialize/deserialize", T, Eigen::Matrix2d, Eigen::Matrix4f, Eigen::Vector3d, Eigen::Vector2d, Eigen::Vector4i
+TEST_CASE_TEMPLATE("static matrix/vector serialize/deserialize", T, Eigen::Matrix<double, 1, 1>, Eigen::Matrix2d, Eigen::Matrix4f, Eigen::Vector3d, Eigen::Vector2d, Eigen::Vector4i
 ) {
   T m = T::Random();
   nlohmann::json json = m;
+  std::cout << json.dump() << "\n";
   T m1 = json.get<T>();
   CHECK_EQ(m, m1);
 }
