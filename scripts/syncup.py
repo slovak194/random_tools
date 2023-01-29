@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# TODO, deal with non standard ports. Maybe just pass cmd to be run on trigger from inotify.
+
 import os
 import sys
 import threading
