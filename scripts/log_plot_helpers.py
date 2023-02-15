@@ -1,3 +1,5 @@
+import os
+import pickle
 import numpy as np
 import numbers
 import pandas as pd
@@ -7,7 +9,7 @@ import manifpy as manif
 import matplotlib
 
 # matplotlib.use('Qt5Agg')
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 import matplotlib.pyplot as plt
 
@@ -79,8 +81,10 @@ def create_manif_groups(ldf):
                 ldf[bundle_name + "." + element_name] = \
                     ldf.apply(lambda x: np.array(x[bundle_name + ".elements"][idx]["coeffs"]), axis=1)
             else:
+                # ldf[bundle_name + "." + element_name] = \
+                #     ldf.apply(lambda x: str_to_type[element_types[idx]](np.array(x[bundle_name + ".elements"][idx]["coeffs"])), axis=1)
                 ldf[bundle_name + "." + element_name] = \
-                    ldf.apply(lambda x: str_to_type[element_types[idx]](np.array(x[bundle_name + ".elements"][idx]["coeffs"])), axis=1)
+                    ldf.apply(lambda x: np.array(x[bundle_name + ".elements"][idx]["coeffs"]), axis=1)
 
     var_names = [k.replace(".type", "") for k in ldf.keys() if ".type" in k]
 
@@ -96,14 +100,17 @@ def create_manif_groups(ldf):
             if group_type == "Bundle" or group_type == "BundleTangent":
                 pass
             else:
-                if group_type.startswith("R") or group_type.endswith("Tangent"):
-                    print(var_name, group_type)
-                    ldf[var_name] = ldf.apply(lambda x: np.array(x[var_name + ".coeffs"]), axis=1)
-                else:
-                    ldf[var_name] = ldf.apply(lambda x: str_to_type[group_type](np.array(x[var_name + ".coeffs"])), axis=1)
+
+                ldf[var_name] = ldf.apply(lambda x: np.array(x[var_name + ".coeffs"]), axis=1)
+
+                # if group_type.startswith("R") or group_type.endswith("Tangent"):
+                #     print(var_name, group_type)
+                #     ldf[var_name] = ldf.apply(lambda x: np.array(x[var_name + ".coeffs"]), axis=1)
+                # else:
+                #     ldf[var_name] = ldf.apply(lambda x: str_to_type[group_type](np.array(x[var_name + ".coeffs"])), axis=1)
 
     for name in ldf.keys():
-        if name.endswith(".type") or name.endswith(".coeffs"):  #  or name.endswith(".elements")
+        if name.endswith(".type") or name.endswith(".coeffs"):  # or name.endswith(".elements")
             ldf = ldf.drop(name, axis=1)
 
     return ldf
@@ -129,6 +136,7 @@ def create_numpy_arrays(ldf):
 
 
 def unwrap_numeric_indexes(ldf):
+
     for k in ldf.keys():
         if isinstance(ldf[k].iloc[0], np.ndarray):
             if len(ldf[k].iloc[0].shape) == 2:
@@ -142,20 +150,37 @@ def unwrap_numeric_indexes(ldf):
                 ldf[k] = ldf[k].apply(lambda x: x.item())
             else:
                 raise NotImplementedError("Arrays with sizes > 2 are not supported")
+
     return ldf
 
 
 def load_msgpack_dataset(l_dump_path):
+
+    import warnings
+
+    picklefile_path = l_dump_path.replace(".msg", ".pickle")
+    if os.path.isfile(picklefile_path):
+        with open(picklefile_path, "rb") as ff:
+            return pickle.load(ff)
+
     with open(l_dump_path, "rb") as data_file:
         data = [unpacked for unpacked in msgpack.Unpacker(data_file)]
 
     lldf = pd.json_normalize(data)
     lldf = create_manif_groups(lldf)
     lldf = create_numpy_arrays(lldf)
-    lldf = unwrap_numeric_indexes(lldf)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        lldf = unwrap_numeric_indexes(lldf)
+
+    lldf = lldf.copy()  # Defragment
 
     if "timestamp" in lldf.keys():
         lldf = lldf.set_index("timestamp")
+
+    with open(picklefile_path, "wb") as ff:
+        pickle.dump(lldf, ff)
 
     return lldf
 
@@ -293,7 +318,6 @@ def from_two_vectors(a, b):
 
 
 def arrow3d(lax, v1, v2, width=0.5, head=0.5, headwidth=2, **kw):
-
     length = np.linalg.norm(v2)
 
     w = width
@@ -320,10 +344,13 @@ def arrow3d(lax, v1, v2, width=0.5, head=0.5, headwidth=2, **kw):
     lax.plot_surface(x, y, z, **kw)
 
 
+def plot_group(lax, g, tips=(0, 1, 2), scale_tips=1, f='.-', name="", existing=None):
+    if existing is None:
+        lines = []
+    else:
+        lines = existing
 
-
-def plot_group(lax, g, tips=(0, 1, 2), scale_tips=1, f='.-', name=""):
-    lines = []
+    ax_base = None
 
     if isinstance(g, manif.SO3):
         ax_base = np.zeros(g.Dim)
@@ -334,11 +361,12 @@ def plot_group(lax, g, tips=(0, 1, 2), scale_tips=1, f='.-', name=""):
 
     c = ['r', 'g', 'b']
 
-    for tip in tips:
-        l = lax.plot(
-            *[[ax_base[j], ax_base[j] + ax_tips[j, tip]] for j in range(g.Dim)],
-            c[tip] + f)
-        lines += l
+    for tip_id, tip in enumerate(tips):
+        print_data = [[ax_base[j], ax_base[j] + ax_tips[j, tip]] for j in range(g.Dim)]
+        if existing is None:
+            lines += lax.plot(*print_data, c[tip] + f)
+        else:
+            lines[tip_id].set_data_3d(*print_data)
 
     if name != "":
         lax.text(*[ax_tips[j, 0] for j in range(g.Dim)], name)
@@ -350,7 +378,7 @@ def get_bundle_plots(ldf, bundle_name):
     some_dict = {el["name"]: {
         "size": len(el["coeffs"]),
         "type": el["type"],
-    } for el in ldf[bundle_name+".elements"][0]
+    } for el in ldf[bundle_name + ".elements"][0]
     }
 
     all_prints = []
@@ -371,6 +399,5 @@ def numpy_to_json(inp_array):
         "order": "F",
         "shape": shape
     }
-
 
 # %%
