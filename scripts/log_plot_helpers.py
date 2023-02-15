@@ -7,7 +7,7 @@ import manifpy as manif
 import matplotlib
 
 # matplotlib.use('Qt5Agg')
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 import matplotlib.pyplot as plt
 
