@@ -22,3 +22,4 @@ add_executable(test_pub test_pub.cpp)
 add_executable(test_sub test_sub.cpp)
 
 add_executable(doctest_json doctest_json.cpp)
+add_executable(doctest_json_yaml doctest_json_yaml.cpp)
