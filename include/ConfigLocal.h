@@ -24,9 +24,10 @@
 
 using namespace json_eigen;
 
-namespace remote {
+namespace random_tools {
+namespace config {
 
-class Config {
+class ConfigLocal {
  public:
 
   std::string m_config_path;
@@ -36,7 +37,7 @@ class Config {
   std::shared_ptr<nlohmann::json> m_types;
 
  public:
-  explicit Config(const std::string &config_path = std::string(PROJECT_SOURCE_DIR) + "/config/conf.yaml") {
+  explicit ConfigLocal(const std::string &config_path = std::string(PROJECT_SOURCE_DIR) + "/config/conf.yaml") {
 
     m_storage = std::make_shared<nlohmann::json>();
     m_types = std::make_shared<nlohmann::json>();
@@ -49,7 +50,7 @@ class Config {
     return Get(key);
   }
 
-  const nlohmann::json &operator()(const std::string &key) {
+  const nlohmann::json &operator()(const std::string &key) const {
     return GetConst(key);
   }
 
@@ -71,11 +72,11 @@ class Config {
       tmp = nlohmann::json::parse(i);
     }
 #ifdef YAML_SUPPORT
-      else if (this->m_config_path.substr(this->m_config_path.find_last_of('.') + 1) == "yaml") {
-        tmp = json_yaml::yaml_to_json(YAML::LoadFile(this->m_config_path));
-      } else if (this->m_config_path.substr(this->m_config_path.find_last_of('.') + 1) == "yml") {
-        tmp = json_yaml::yaml_to_json(YAML::LoadFile(this->m_config_path));
-      }
+    else if (this->m_config_path.substr(this->m_config_path.find_last_of('.') + 1) == "yaml") {
+      tmp = json_yaml::yaml_to_json(YAML::LoadFile(this->m_config_path));
+    } else if (this->m_config_path.substr(this->m_config_path.find_last_of('.') + 1) == "yml") {
+      tmp = json_yaml::yaml_to_json(YAML::LoadFile(this->m_config_path));
+    }
 #endif
     else {
       throw std::runtime_error("Wrong file format");
@@ -95,7 +96,7 @@ class Config {
     return (*this->m_storage).at(nlohmann::json::json_pointer(key));
   }
 
-  const nlohmann::json &GetConst(const std::string &key) {
+  const nlohmann::json &GetConst(const std::string &key) const {
     return (*this->m_storage).at(nlohmann::json::json_pointer(key));
   }
 
@@ -140,6 +141,7 @@ class Config {
 
 };
 
+}
 }
 
 #endif //REMOTE_CONFIG_INCLUDE_SERVER_H_

@@ -16,7 +16,7 @@
 using namespace boost;
 using namespace nlohmann;
 
-namespace remote {
+namespace random_tools {
 
 namespace rpc {
 
@@ -70,6 +70,16 @@ class Server {
     m_buf.reserve(256);
 
     spdlog::debug("Created rpc server with endpoint: {}", addr);
+
+    AddMethod("list", [this](const json &j) -> json {
+      std::vector<std::string> keys;
+      keys.reserve(calls.size());
+
+      for(auto kv : calls) {
+        keys.push_back(kv.first);
+      }
+      return keys;
+    });
 
     Receive();
   }
@@ -126,7 +136,7 @@ class Server {
   std::vector<std::uint8_t> m_buf;
   azmq::rep_socket rep_socket;
 
-  std::unordered_map<std::string, std::function<json(json)>> calls;
+  std::unordered_map<std::string, std::function<json(const json)>> calls;
 
 };
 
