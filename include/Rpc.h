@@ -40,11 +40,18 @@ class Client {  // TODO, make async with black jack and futures.
     return CallReq(req);
   }
 
+  template <typename... Ts>
+  json CallAsync(const std::string &fun, Ts const&... args) {
+    json req;
+    req["fun"] = fun;
+    req["args"] = json::array({args...});
+    return CallReqAsync(req);
+  }
+
   json CallReq(const json &req) {
 
     spdlog::debug("Sending {}", req.dump());
     auto message = azmq::message(asio::buffer(json::to_msgpack(req)));
-//    this->req_socket.async_send() // TODO, make async.
     this->req_socket.send(message);
     this->m_buf.resize(1024);
     auto bytes_received = this->req_socket.receive(asio::buffer(this->m_buf));
@@ -58,6 +65,32 @@ class Client {  // TODO, make async with black jack and futures.
     }
   }
 
+  json CallReqAsync(const json &req) { // TODO, this is unstable or not working at all. 
+
+    spdlog::debug("Sending async{}", req.dump());
+    this->m_msg = azmq::message(asio::buffer(json::to_msgpack(req)));
+    this->req_socket.async_send(
+        this->m_msg,
+        [](auto ...vn) {
+          spdlog::debug("Rpc async rec sent");
+        });
+
+    this->m_buf.resize(1024);
+    this->req_socket.async_receive(
+        asio::buffer(this->m_buf),
+        [this](const boost::system::error_code& ec, std::size_t bytes_received){
+          spdlog::debug("error_code {} bytes_received {}", ec.message(), bytes_received);
+              if (bytes_received) {
+                this->m_buf.resize(bytes_received);
+                spdlog::debug("Received bytes: {}", bytes_received);
+                std::cout << json::from_msgpack(this->m_buf).dump(1) << std::endl;
+              }
+        });
+
+    return {}; // TODO, return future for actual rpc calls. For config it does not matter much.
+  }
+
+  azmq::message m_msg;
   std::vector<std::uint8_t> m_buf;
   azmq::req_socket req_socket;
 
