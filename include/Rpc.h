@@ -20,7 +20,7 @@ namespace random_tools {
 
 namespace rpc {
 
-class Client {
+class Client {  // TODO, make async with black jack and futures.
  public:
   explicit Client(const std::string &addr, asio::io_service &ios)
       : req_socket(ios) {
@@ -43,7 +43,9 @@ class Client {
   json CallReq(const json &req) {
 
     spdlog::debug("Sending {}", req.dump());
-    this->req_socket.send(azmq::message(asio::buffer(json::to_msgpack(req))));
+    auto message = azmq::message(asio::buffer(json::to_msgpack(req)));
+//    this->req_socket.async_send() // TODO, make async.
+    this->req_socket.send(message);
     this->m_buf.resize(1024);
     auto bytes_received = this->req_socket.receive(asio::buffer(this->m_buf));
 
