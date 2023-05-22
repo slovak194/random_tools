@@ -65,7 +65,7 @@ class Client {  // TODO, make async with black jack and futures.
     }
   }
 
-  json CallReqAsync(const json &req) { // TODO, this is unstable or not working at all. 
+  json CallReqAsync(const json &req) { // TODO, this is unstable or not working at all.
 
     spdlog::debug("Sending async{}", req.dump());
     this->m_msg = azmq::message(asio::buffer(json::to_msgpack(req)));
