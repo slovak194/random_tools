@@ -24,8 +24,8 @@ namespace rpc {
 
 class Client {  // TODO, make async with black jack and futures.
  public:
-  explicit Client(const std::string &addr, asio::io_service &ios)
-      : m_req_socket(ios) {
+  explicit Client(const std::string &addr, asio::io_service &ios, const std::chrono::milliseconds receive_timeout = 500ms)
+      : m_req_socket(ios), m_receive_timeout(receive_timeout) {
 
     m_req_socket.connect(addr);
     m_buf.reserve(256);
@@ -45,13 +45,13 @@ class Client {  // TODO, make async with black jack and futures.
     req["args"] = json::array({args...});
 //    return CallReq(req); // TODO, keep that for a plan B
     auto result_future = CallReqAsync(req);
-    auto res_status = result_future.wait_for(0.5s);
+    auto res_status = result_future.wait_for(m_receive_timeout);
       if (res_status == std::future_status::ready) {
         auto value = result_future.get();
         SPDLOG_DEBUG("[CLIENT] Received result: {}", value.dump());
         return value;
       } else {
-        SPDLOG_WARN("[CLIENT] Receive timeout, canceling ...");
+        SPDLOG_WARN("[CLIENT] Receive receive_timeout, canceling ...");
         m_req_socket.cancel();
       }
     return {};
@@ -126,6 +126,7 @@ class Client {  // TODO, make async with black jack and futures.
   azmq::message m_msg;
   std::vector<std::uint8_t> m_buf;
   azmq::req_socket m_req_socket;
+  const std::chrono::milliseconds m_receive_timeout;
 
 };
 
@@ -220,7 +221,7 @@ class Server {
 #include <doctest.h>
 TEST_SUITE("some") {
 TEST_CASE("else") {
-  
+
 }
 }
 #endif
