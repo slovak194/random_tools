@@ -84,13 +84,12 @@ int main(int argc, char **argv) {
 
   });
 
-  std::thread ios_thread([&this_ios]() {
+  std::thread{[&this_ios]() {
     asio::io_context::work work(this_ios);
     this_ios.run();
     SPDLOG_DEBUG("[MAIN] this_ios exited.");
-  });
+  }}.detach();
 
-  ios_thread.detach();
   
   client_thread.join();
 
