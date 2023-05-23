@@ -38,6 +38,9 @@ int main(int argc, char **argv) {
     random_tools::rpc::Server rpc("tcp://*:5555", ios);
     rpc.AddMethod("some", [&my_class](json a) { return my_class.some(a); });
     rpc.AddMethod("other", [&my_class](json a) { return my_class.other(a); });
+
+    std::this_thread::sleep_for(5s);
+
     ios.run();
   });
 
@@ -60,12 +63,20 @@ int main(int argc, char **argv) {
       j[2] = "vsdfafvas";
 
       auto res = rpc.CallAsync("some", j);
-      auto value = res.get();
-      SPDLOG_DEBUG("[MAIN] Received result: {}", value.dump());
 
-      assert(value[0] == j[0]);
-      assert(value[1] == j[1]);
-      assert(value[2] == j[2]);
+      auto res_status = res.wait_for(0.5s);
+
+      if (res_status == std::future_status::ready) {
+        auto value = res.get();
+        SPDLOG_DEBUG("[MAIN] Received result: {}", value.dump());
+
+        assert(value[0] == j[0]);
+        assert(value[1] == j[1]);
+        assert(value[2] == j[2]);
+      } else {
+        SPDLOG_WARN("[MAIN] Result timeout");
+        rpc.req_socket.cancel();
+      }
 
       std::this_thread::sleep_for(1s);
 

@@ -56,7 +56,7 @@ class Client {  // TODO, make async with black jack and futures.
     return CallReqAsync(req);
   }
 
-  json CallReq(const json &req) {
+  json CallReq(const json &req) { // TODO, deprecated
 
     SPDLOG_DEBUG("[CLIENT] Sending {}", req.dump());
     auto message = azmq::message(asio::buffer(json::to_msgpack(req)));

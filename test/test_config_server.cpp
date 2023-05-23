@@ -36,8 +36,8 @@ int main(int argc, char **argv) {
 
   random_tools::rpc::Server rpc("tcp://*:5555", ios);
 
-  rpc.AddMethod("get", [&conf](json j) { return conf.Get(j["key"].get<std::string>()); });
-  rpc.AddMethod("set", [&conf](json j) {
+  rpc.AddMethod("config_get", [&conf](json j) { return conf.Get(j["key"].get<std::string>()); });
+  rpc.AddMethod("config_set", [&conf](json j) {
     conf.Set(j["key"].get<std::string>(), j["value"]);
     return conf.Get(j["key"].get<std::string>());
   });
