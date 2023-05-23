@@ -38,23 +38,28 @@ class Client {  // TODO, make async with black jack and futures.
     m_req_socket.cancel();
   }
 
-  template <typename... Ts>
-  json Call(const std::string &fun, Ts const&... args) {
+  json Call(const std::string &fun, const json &args) {
     json req;
     req["fun"] = fun;
-    req["args"] = json::array({args...});
+    req["args"] = args;
 //    return CallReq(req); // TODO, keep that for a plan B
     auto result_future = CallReqAsync(req);
     auto res_status = result_future.wait_for(m_receive_timeout);
-      if (res_status == std::future_status::ready) {
-        auto value = result_future.get();
-        SPDLOG_DEBUG("[CLIENT] Received result: {}", value.dump());
-        return value;
-      } else {
-        SPDLOG_WARN("[CLIENT] Receive receive_timeout, canceling ...");
-        m_req_socket.cancel();
-      }
+    if (res_status == std::future_status::ready) {
+      auto value = result_future.get();
+      SPDLOG_DEBUG("[CLIENT] Received result: {}", value.dump());
+      return value;
+    } else {
+      SPDLOG_WARN("[CLIENT] Receive receive_timeout, canceling ...");
+      m_req_socket.cancel();
+    }
     return {};
+  }
+
+
+  template <typename... Ts>
+  json Call(const std::string &fun, Ts const&... args) {
+    return Call(fun, json::array({args...}));
   }
 
   template <typename... Ts>
