@@ -63,9 +63,7 @@ int main(int argc, char **argv) {
       j[2] = "vsdfafvas";
 
       auto res = rpc.CallAsync("some", j);
-
       auto res_status = res.wait_for(0.5s);
-
       if (res_status == std::future_status::ready) {
         auto value = res.get();
         SPDLOG_DEBUG("[MAIN] Received result: {}", value.dump());
@@ -75,9 +73,11 @@ int main(int argc, char **argv) {
         assert(value[2] == j[2]);
       } else {
         SPDLOG_WARN("[MAIN] Result timeout");
-        rpc.req_socket.cancel();
+        rpc.Cancel();
       }
 
+      auto value = rpc.Call("some", j);
+      SPDLOG_DEBUG("[MAIN] Received result: {}", value.dump());
       std::this_thread::sleep_for(1s);
 
     }

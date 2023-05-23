@@ -16,6 +16,7 @@
 
 using namespace boost;
 using namespace nlohmann;
+using namespace std::chrono_literals;
 
 namespace random_tools {
 
@@ -24,13 +25,17 @@ namespace rpc {
 class Client {  // TODO, make async with black jack and futures.
  public:
   explicit Client(const std::string &addr, asio::io_service &ios)
-      : req_socket(ios) {
+      : m_req_socket(ios) {
 
-    req_socket.connect(addr);
+    m_req_socket.connect(addr);
     m_buf.reserve(256);
 
     SPDLOG_DEBUG("[CLIENT] Created rpc client with endpoint: {}", addr);
 
+  }
+
+  void Cancel() {
+    m_req_socket.cancel();
   }
 
   template <typename... Ts>
@@ -38,7 +43,18 @@ class Client {  // TODO, make async with black jack and futures.
     json req;
     req["fun"] = fun;
     req["args"] = json::array({args...});
-    return CallReq(req);
+//    return CallReq(req); // TODO, keep that for a plan B
+    auto result_future = CallReqAsync(req);
+    auto res_status = result_future.wait_for(0.5s);
+      if (res_status == std::future_status::ready) {
+        auto value = result_future.get();
+        SPDLOG_DEBUG("[CLIENT] Received result: {}", value.dump());
+        return value;
+      } else {
+        SPDLOG_WARN("[CLIENT] Receive timeout, canceling ...");
+        m_req_socket.cancel();
+      }
+    return {};
   }
 
   template <typename... Ts>
@@ -56,13 +72,13 @@ class Client {  // TODO, make async with black jack and futures.
     return CallReqAsync(req);
   }
 
-  json CallReq(const json &req) { // TODO, deprecated
+  json CallReq(const json &req) { // TODO, possibly deprecated
 
     SPDLOG_DEBUG("[CLIENT] Sending {}", req.dump());
     auto message = azmq::message(asio::buffer(json::to_msgpack(req)));
-    this->req_socket.send(message);
+    this->m_req_socket.send(message);
     this->m_buf.resize(1024);
-    auto bytes_received = this->req_socket.receive(asio::buffer(this->m_buf));
+    auto bytes_received = this->m_req_socket.receive(asio::buffer(this->m_buf));
 
     if (bytes_received) {
       this->m_buf.resize(bytes_received);
@@ -75,7 +91,7 @@ class Client {  // TODO, make async with black jack and futures.
 
   std::future<json> CallReqAsync(const json &req) {
 
-    if (this->req_socket.get_io_service().stopped()) {
+    if (this->m_req_socket.get_io_service().stopped()) {
       SPDLOG_ERROR("[CLIENT] IO service is not running");
       exit(EXIT_FAILURE);
     }
@@ -85,13 +101,13 @@ class Client {  // TODO, make async with black jack and futures.
     auto promise = std::make_shared<std::promise<json>>();
     std::future<json> future = promise->get_future();
 
-    this->req_socket.async_send(
+    this->m_req_socket.async_send(
         azmq::message(asio::buffer(json::to_msgpack(req))),
         [this, promise](auto ...vn) {
           SPDLOG_DEBUG("[CLIENT] Rpc async rec sent, scheduling receive ...");
 
           auto buf = std::make_shared<std::vector<std::uint8_t>>(1024);
-          this->req_socket.async_receive(
+          this->m_req_socket.async_receive(
               asio::buffer(*buf),
               [buf, promise](const boost::system::error_code& ec, std::size_t bytes_received){
                 SPDLOG_DEBUG("[CLIENT] error_code {} bytes_received {}", ec.message(), bytes_received);
@@ -109,7 +125,7 @@ class Client {  // TODO, make async with black jack and futures.
 
   azmq::message m_msg;
   std::vector<std::uint8_t> m_buf;
-  azmq::req_socket req_socket;
+  azmq::req_socket m_req_socket;
 
 };
 
@@ -197,3 +213,14 @@ class Server {
 }
 
 }
+
+
+#ifdef DO_TESTS
+#include <iostream>
+#include <doctest.h>
+TEST_SUITE("some") {
+TEST_CASE("else") {
+  
+}
+}
+#endif
