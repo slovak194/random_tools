@@ -17,6 +17,7 @@ target_compile_definitions(test_config_server PUBLIC PROJECT_SOURCE_DIR="${PROJE
 
 add_executable(test_rpc_server test_rpc_server.cpp)
 add_executable(test_rpc_client test_rpc_client.cpp)
+add_executable(test_rpc_async_server_and_client test_rpc_async_server_and_client.cpp)
 
 add_executable(test_pub test_pub.cpp)
 add_executable(test_sub test_sub.cpp)

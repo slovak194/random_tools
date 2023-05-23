@@ -3,13 +3,13 @@
 
 #include <boost/asio.hpp>
 
-#include "Config.h"
+#include "ConfigLocal.h"
 #include "Rpc.h"
 
 using namespace std::chrono_literals;
 
 
-void on_timer(boost::asio::steady_timer &timer, remote::Config &conf) {
+void on_timer(boost::asio::steady_timer &timer, random_tools::config::ConfigLocal &conf) {
   timer.expires_after(std::chrono::seconds(1));
 
   auto m_const = json_eigen::MapMatrixXT<double, 3, 3>(conf("/test/matrix/data"));
@@ -32,9 +32,9 @@ int main(int argc, char **argv) {
 
   boost::asio::io_service ios;
 
-  remote::Config conf(std::string(PROJECT_SOURCE_DIR) + "/config/conf.yaml");
+  random_tools::config::ConfigLocal conf(std::string(PROJECT_SOURCE_DIR) + "/config/conf.yaml");
 
-  remote::rpc::Server rpc("tcp://*:5555", ios);
+  random_tools::rpc::Server rpc("tcp://*:5555", ios);
 
   rpc.AddMethod("get", [&conf](json j) { return conf.Get(j["key"].get<std::string>()); });
   rpc.AddMethod("set", [&conf](json j) {

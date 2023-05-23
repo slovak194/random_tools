@@ -1,4 +1,5 @@
 #include <thread>
+#include <iostream>
 #include <chrono>
 #include <boost/asio.hpp>
 
@@ -30,7 +31,7 @@ int main(int argc, char **argv) {
 
   SetSigHandler(m_signals, ios);
 
-  remote::rpc::Client rpc("tcp://127.0.0.1:5555", ios);
+  random_tools::rpc::Client rpc("tcp://127.0.0.1:5555", ios);
 
   std::thread th([&ios](){
     ios.run();

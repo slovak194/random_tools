@@ -1,3 +1,4 @@
+#include <iostream>
 
 #include "Rpc.h"
 
@@ -23,7 +24,7 @@ int main(int argc, char **argv) {
   MyClass my_class;
 
   asio::io_service ios;
-  remote::rpc::Server rpc("tcp://*:5555", ios);
+  random_tools::rpc::Server rpc("tcp://*:5555", ios);
 
   rpc.AddMethod("some", [&my_class](json a) { return my_class.some(a); });
   rpc.AddMethod("other", [&my_class](json a) { return my_class.other(a); });

@@ -8,6 +8,7 @@
 #include <functional>
 #include <thread>
 #include <string>
+#include <future>
 
 #include <nlohmann/json.hpp>
 #include <azmq/socket.hpp>
@@ -28,7 +29,7 @@ class Client {  // TODO, make async with black jack and futures.
     req_socket.connect(addr);
     m_buf.reserve(256);
 
-    spdlog::debug("Created rpc client with endpoint: {}", addr);
+    SPDLOG_DEBUG("[CLIENT] Created rpc client with endpoint: {}", addr);
 
   }
 
@@ -41,16 +42,23 @@ class Client {  // TODO, make async with black jack and futures.
   }
 
   template <typename... Ts>
-  json CallAsync(const std::string &fun, Ts const&... args) {
+  std::future<json> CallAsync(const std::string &fun, Ts const&... args) {
     json req;
     req["fun"] = fun;
     req["args"] = json::array({args...});
     return CallReqAsync(req);
   }
 
+  std::future<json> CallAsync(const std::string &fun, const json &args) {
+    json req;
+    req["fun"] = fun;
+    req["args"] = args;
+    return CallReqAsync(req);
+  }
+
   json CallReq(const json &req) {
 
-    spdlog::debug("Sending {}", req.dump());
+    SPDLOG_DEBUG("[CLIENT] Sending {}", req.dump());
     auto message = azmq::message(asio::buffer(json::to_msgpack(req)));
     this->req_socket.send(message);
     this->m_buf.resize(1024);
@@ -58,36 +66,45 @@ class Client {  // TODO, make async with black jack and futures.
 
     if (bytes_received) {
       this->m_buf.resize(bytes_received);
-      spdlog::debug("Received bytes: {}", bytes_received);
+      SPDLOG_DEBUG("[CLIENT] Received bytes: {}", bytes_received);
       return json::from_msgpack(this->m_buf);
     } else {
       return {};
     }
   }
 
-  json CallReqAsync(const json &req) { // TODO, this is unstable or not working at all.
+  std::future<json> CallReqAsync(const json &req) {
 
-    spdlog::debug("Sending async{}", req.dump());
-    this->m_msg = azmq::message(asio::buffer(json::to_msgpack(req)));
+    if (this->req_socket.get_io_service().stopped()) {
+      SPDLOG_ERROR("[CLIENT] IO service is not running");
+      exit(EXIT_FAILURE);
+    }
+
+    SPDLOG_DEBUG("[CLIENT] Sending async{}", req.dump());
+
+    auto promise = std::make_shared<std::promise<json>>();
+    std::future<json> future = promise->get_future();
+
     this->req_socket.async_send(
-        this->m_msg,
-        [](auto ...vn) {
-          spdlog::debug("Rpc async rec sent");
+        azmq::message(asio::buffer(json::to_msgpack(req))),
+        [this, promise](auto ...vn) {
+          SPDLOG_DEBUG("[CLIENT] Rpc async rec sent, scheduling receive ...");
+
+          auto buf = std::make_shared<std::vector<std::uint8_t>>(1024);
+          this->req_socket.async_receive(
+              asio::buffer(*buf),
+              [buf, promise](const boost::system::error_code& ec, std::size_t bytes_received){
+                SPDLOG_DEBUG("[CLIENT] error_code {} bytes_received {}", ec.message(), bytes_received);
+                if (bytes_received) {
+                  buf->resize(bytes_received);
+                  auto result = json::from_msgpack(*buf);
+                  SPDLOG_DEBUG("[CLIENT] Received bytes: {}, {}", bytes_received, result.dump());
+                  promise->set_value(result);
+                }
+              });
         });
 
-    this->m_buf.resize(1024);
-    this->req_socket.async_receive(
-        asio::buffer(this->m_buf),
-        [this](const boost::system::error_code& ec, std::size_t bytes_received){
-          spdlog::debug("error_code {} bytes_received {}", ec.message(), bytes_received);
-              if (bytes_received) {
-                this->m_buf.resize(bytes_received);
-                spdlog::debug("Received bytes: {}", bytes_received);
-                std::cout << json::from_msgpack(this->m_buf).dump(1) << std::endl;
-              }
-        });
-
-    return {}; // TODO, return future for actual rpc calls. For config it does not matter much.
+    return future;
   }
 
   azmq::message m_msg;
@@ -104,7 +121,7 @@ class Server {
     rep_socket.bind(addr);
     m_buf.reserve(256);
 
-    spdlog::debug("Created rpc server with endpoint: {}", addr);
+    SPDLOG_DEBUG(" [SERVER] " "Created rpc server with endpoint: {}", addr);
 
     AddMethod("list", [this](const json &j) -> json {
       std::vector<std::string> keys;
@@ -121,7 +138,7 @@ class Server {
 
   void Receive() {
 
-    spdlog::debug("Schedule async receive");
+    SPDLOG_DEBUG("[SERVER] Schedule async receive");
 
     this->m_buf.resize(1024);
 
@@ -132,7 +149,7 @@ class Server {
 
   void OnReceive(const boost::system::error_code &error, size_t bytes_transferred) {
 
-    spdlog::debug("On Receive callback");
+    SPDLOG_DEBUG("[SERVER] On Receive callback");
 
     json repl;
 
@@ -144,11 +161,11 @@ class Server {
       try {
         json req = json::from_msgpack(this->m_buf);
 
-        spdlog::debug("Received: {}", req.dump());
+        SPDLOG_DEBUG("[SERVER] Received: {}", req.dump());
         auto callable = calls.at(req["fun"].get<std::string>());
         auto args = req["args"];
 
-        spdlog::debug("Calling calable with args: {}", args.dump());
+        SPDLOG_DEBUG("[SERVER] Calling calable with args: {}", args.dump());
         repl = callable(args);
 
       } catch (const std::exception &e) {
@@ -156,10 +173,12 @@ class Server {
       }
     }
 
-    spdlog::debug("sending reply {}", repl.dump());
+    SPDLOG_DEBUG("[SERVER] Sending reply {}", repl.dump());
     this->rep_socket.async_send(
         azmq::message(asio::buffer(json::to_msgpack(repl))),
-        [this](auto ...vn) {});
+        [this](auto ...vn) {
+          SPDLOG_DEBUG("[SERVER] Reply sent");
+        });
 
     Receive();
   }
