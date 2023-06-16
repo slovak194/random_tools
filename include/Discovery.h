@@ -56,8 +56,8 @@ void from_json(const nlohmann::json &j, Component &c) {
 
 class Listener {
  public:
-  explicit Listener(boost::asio::io_service &ios, const std::string &self_name, int port = 8000)
-      : listening_socket(ios, boost::asio::ip::udp::v4()), self_name(self_name) {
+  explicit Listener(boost::asio::io_service &ios, int port = 8000)
+      : listening_socket(ios, boost::asio::ip::udp::v4()) {
     listening_socket.set_option(boost::asio::ip::udp::socket::reuse_address(true));
     listening_socket.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), port));
     m_buf.reserve(256);
@@ -90,13 +90,12 @@ class Listener {
 
     auto ip = neighbor_endpoint.address().to_string();
     SPDLOG_TRACE("Received udp packet from {} with payload: {}", ip, payload.dump());
-
     Component component = payload;
-
     component.ip = ip;
 
-    if (neighbors.find(component.name) == neighbors.end() and component.name != self_name) {
-      neighbors[component.name] = component;
+    if (neighbors.find(component.name) == neighbors.end()) {
+        SPDLOG_INFO("Added new neighbor {}", nlohmann::json(component).dump());
+        neighbors[component.name] = component;
     } else {
       // TODO, OLSLO, check period.
     }
@@ -152,10 +151,10 @@ class Endpoint {
   Listener listener;
 
  public:
-  const std::map<std::string, Component> &neighbors = listener.neighbors;
+  std::map<std::string, Component> &neighbors = listener.neighbors;
 
   Endpoint(boost::asio::io_service &ios, Component component)
-      : broadcaster(ios, nlohmann::json(component)), listener(ios, component.name) {}
+      : broadcaster(ios, nlohmann::json(component)), listener(ios) {}
 
 };
 
