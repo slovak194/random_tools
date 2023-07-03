@@ -37,7 +37,7 @@ class ConfigLocal {
   std::shared_ptr<nlohmann::json> m_types;
 
  public:
-  explicit ConfigLocal(const std::string &config_path = std::string(PROJECT_SOURCE_DIR) + "/config/conf.yaml") {
+  explicit ConfigLocal(const std::string &config_path) {
 
     m_storage = std::make_shared<nlohmann::json>();
     m_types = std::make_shared<nlohmann::json>();
