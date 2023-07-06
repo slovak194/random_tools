@@ -132,8 +132,16 @@ class Broadcaster {
 
   void Broadcast() {
     SPDLOG_TRACE("Broadcast");
-    this->broadcast_socket.send_to(boost::asio::buffer(nlohmann::json::to_msgpack(payload)), this->broadcast_endpoint);
-    this->ScheduleBroadcast();
+    boost::system::error_code errcode;
+    auto bytes_transfered = this->broadcast_socket.send_to(boost::asio::buffer(nlohmann::json::to_msgpack(payload)), this->broadcast_endpoint, 0, errcode);
+
+    if (errcode.value() == boost::system::errc::success) {
+      this->ScheduleBroadcast();
+    } else {
+      SPDLOG_ERROR("Exiting. Discovery broadcast failed with error: {}", errcode.message());
+      exit(EXIT_FAILURE);
+    }
+
   }
 
   nlohmann::json payload;
