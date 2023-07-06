@@ -142,6 +142,11 @@ class Broadcaster {
       exit(EXIT_FAILURE);
     }
 
+    if (bytes_transfered == 0) {
+      SPDLOG_ERROR("Exiting. Discovery broadcast bytes_transfered == 0");
+      exit(EXIT_FAILURE);
+    }
+
   }
 
   nlohmann::json payload;
