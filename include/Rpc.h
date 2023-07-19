@@ -120,6 +120,7 @@ class Client {  // TODO, make async with black jack and futures.
                   buf->resize(bytes_received);
                   auto result = json::from_msgpack(*buf);
                   SPDLOG_DEBUG("[CLIENT] Received bytes: {}, {}", bytes_received, result.dump());
+                  // TODO, OLSLO, CRITICAL!!! Make sure promice is filled with the result of the request we sent. Add "fun" and ID on the (client and) server side and check if it is the same. Strip them and fill promice with payload only.
                   promise->set_value(result);
                 }
               });
