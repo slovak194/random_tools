@@ -27,7 +27,7 @@ class RpcClient:
         self.socket.send(msp.packb({"fun": fun, "args": args}))
         # timeout (int [default: None]) – The timeout (in milliseconds) to wait for an event. If unspecified (or specified None), will wait forever for an event.
         # flags (int [default: POLLIN]) – POLLIN, POLLOUT, or POLLIN|POLLOUT. The event flags to poll for.
-        timeout_ms = 1000
+        timeout_ms = 10000
         if self.socket.poll(timeout_ms, zmq.POLLIN) == 0:
             log.warning(f"Timeout ({timeout_ms} ms) expired, return None")
             return None
