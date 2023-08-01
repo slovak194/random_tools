@@ -1,9 +1,11 @@
 from pprint import pprint, pformat
-from functools import partial
+
+import logging as log
 
 import zmq
 import msgpack as msp
 
+log.basicConfig(level=log.INFO, format='[%(asctime)s][%(name)s:%(levelname)s] %(message)s')
 
 class RpcClient:
     def __init__(self, addr="tcp://127.0.0.1:5555", context=None):
@@ -13,11 +15,21 @@ class RpcClient:
         self.socket.connect(self.address)
 
     def call(self, fun, args=None):
+
+        # TODO, this potentially has to be rewritten. req/rep semantics is:
+            # req send is blocked untill it gets the responce which can be read.
+            # rep receive is blocked untill it gets the request.
+        # https://zguide.zeromq.org/docs/chapter2/
+
         while self.socket.poll(10, zmq.POLLIN) & zmq.POLLIN:
             _ = self.socket.recv()
 
         self.socket.send(msp.packb({"fun": fun, "args": args}))
-        if self.socket.poll(1000, zmq.POLLIN) == 0:
+        # timeout (int [default: None]) – The timeout (in milliseconds) to wait for an event. If unspecified (or specified None), will wait forever for an event.
+        # flags (int [default: POLLIN]) – POLLIN, POLLOUT, or POLLIN|POLLOUT. The event flags to poll for.
+        timeout_ms = 10000
+        if self.socket.poll(timeout_ms, zmq.POLLIN) == 0:
+            log.warning(f"Timeout ({timeout_ms} ms) expired, return None")
             return None
 
         rec = self.socket.recv()
