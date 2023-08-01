@@ -30,7 +30,7 @@ class Client {  // TODO, make async with black jack and futures.
     m_req_socket.connect(addr);
     m_buf.reserve(256);
 
-    SPDLOG_DEBUG("[CLIENT] Created rpc client with endpoint: {}", addr);
+    SPDLOG_INFO("[CLIENT] Created rpc client with endpoint: {}", addr);
 
   }
 
@@ -144,7 +144,7 @@ class Server {
     rep_socket.bind(addr);
     m_buf.reserve(256);
 
-    SPDLOG_DEBUG(" [SERVER] " "Created rpc server with endpoint: {}", addr);
+    SPDLOG_INFO(" [SERVER] " "Created rpc server with endpoint: {}", addr);
 
     AddMethod("list", [this](const json &j) -> json {
       std::vector<std::string> keys;
@@ -156,6 +156,7 @@ class Server {
       return keys;
     });
 
+    SPDLOG_INFO(" [SERVER] " "Listening ...", addr);
     Receive();
   }
 
@@ -207,6 +208,7 @@ class Server {
   }
 
   void AddMethod(const std::string &key, std::function<json(json)> call) {
+    SPDLOG_INFO("[SERVER] Adding method {}", key);
     calls.emplace(key, call);
   }
 
