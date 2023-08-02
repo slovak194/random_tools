@@ -4,6 +4,8 @@
 
 #include <boost/asio.hpp>
 #include <spdlog/spdlog.h>
+#include <spdlog/sinks/dup_filter_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 #include <nlohmann/json.hpp>
 
@@ -121,6 +123,12 @@ class Broadcaster {
 
     broadcast_socket.set_option(boost::asio::ip::udp::socket::reuse_address(true));
     broadcast_socket.set_option(boost::asio::socket_base::broadcast(true));
+
+    auto dup_filter = std::make_shared<spdlog::sinks::dup_filter_sink_st>(std::chrono::seconds(10));
+    dup_filter->add_sink(std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>());
+    logger = std::make_unique<spdlog::logger>("Broadcaster", dup_filter);
+    logger->set_level(spdlog::level::debug);
+
     ScheduleBroadcast();
   }
 
@@ -133,7 +141,7 @@ class Broadcaster {
   void Broadcast() {
     SPDLOG_TRACE("Broadcast");
     boost::system::error_code errcode;
-    SPDLOG_DEBUG("Broadcasting to: {}", this->broadcast_endpoint.address().to_string());
+    SPDLOG_LOGGER_DEBUG(logger, "Broadcasting to: {}", this->broadcast_endpoint.address().to_string());
     auto bytes_transfered = this->broadcast_socket.send_to(boost::asio::buffer(nlohmann::json::to_msgpack(payload)), this->broadcast_endpoint, 0, errcode);
 
     if (errcode.value() != boost::system::errc::success) {
@@ -148,6 +156,7 @@ class Broadcaster {
 
   }
 
+  std::unique_ptr<spdlog::logger> logger;
   nlohmann::json payload;
   std::chrono::seconds broadcast_period;
   boost::asio::ip::udp::endpoint broadcast_endpoint;
