@@ -41,14 +41,14 @@ struct Component {
   nlohmann::json data;
 };
 
-void to_json(nlohmann::json &j, const Component &c) {
+inline void to_json(nlohmann::json &j, const Component &c) {
   j["name"] = c.name;
   j["type"] = c.type;
   j["ip"] = c.ip;
   j["data"] = c.data;
 }
 
-void from_json(const nlohmann::json &j, Component &c) {
+inline void from_json(const nlohmann::json &j, Component &c) {
   j.at("name").get_to(c.name);
   j.at("type").get_to(c.type);
   j.at("ip").get_to(c.ip);
